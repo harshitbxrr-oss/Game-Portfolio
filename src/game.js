@@ -1465,7 +1465,7 @@ function updateWorld(dt) {
 
     // Lifelike dragon head movement: scanning landscape, anticipating turns, tilting up proudly to roar
     const headScan = Math.sin(t * 0.7 + (d.id === 'volcanic' ? 1.2 : d.id === 'jade' ? 2.8 : 0)) * 0.18;
-    const turnLead = clamp(-yawDiff * 0.7, -0.32, 0.32);
+    const turnLead = -d.dir * 0.18;
     d.headYaw = damp(d.headYaw || 0, headScan + turnLead, 3.5, dt);
 
     const roarTilt = isBreathing ? -0.16 : 0.0;
@@ -1475,7 +1475,7 @@ function updateWorld(dt) {
 
     // Unique aerodynamic serpentine tail movement tuned to each dragon's mass & frequency
     const tailSpeed = d.tailFreq || 3.2;
-    const turnSway = clamp(yawDiff * 1.8, -0.45, 0.45);
+    const turnSway = d.dir * 0.28;
     d.tailYaw1 = Math.sin(t * tailSpeed) * 0.14 - turnSway * 0.40;
     d.tailPitch1 = -Math.cos(t * tailSpeed * 0.5) * 0.07 + (d.glideWeight > 0.5 ? 0.03 : -0.05);
 
@@ -1489,96 +1489,56 @@ function updateWorld(dt) {
     const fwdPt = M4.xf(MHead, [0, 0.85, -5.5]);
     const fwdDir = V3.norm(V3.sub(fwdPt, mouthPos));
 
-    if (isBreathing && FX) {
+    d.breathEmitT = (d.breathEmitT || 0) + dt;
+    if (isBreathing && FX && d.breathEmitT >= 0.09) {
+      d.breathEmitT = 0;
       if (d.element === 'fire') {
         // FIRE DRAGON BREATH (Both Dragons are radiant blazing RED)
-        for (let k = 0; k < 2; k++) {
-          const spd = 48 + Math.random() * 24 * bInt;
-          const spread = (Math.random() - 0.5) * 4.5;
-          const spreadY = (Math.random() - 0.5) * 3.5;
-          const vx = fwdDir[0] * spd + spread;
-          const vy = fwdDir[1] * spd + spreadY + 1.2;
-          const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 4.5;
-          
-          // Pure blazing red flame torrent (FX.add)
-          if (FX.add) {
-            const col = [1.0, 0.05 + Math.random() * 0.14, 0.04, 0.98];
-            FX.add.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
-              vel: [vx, vy, vz],
-              life: 1.55 + Math.random() * 0.45,
-              size: 1.6 * d.scale * 0.35,
-              grow: 7.5 * d.scale * 0.35,
-              drag: 1.08,
-              g: -1.2,
-              col: col
-            });
-            // Brilliant fiery red core sparks
-            if (Math.random() < 0.65) {
-              FX.add.emit({
-                pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
-                vel: [vx * 1.15, vy * 1.15, vz * 1.15],
-                life: 0.95 + Math.random() * 0.35,
-                size: 1.0, grow: 2.4, drag: 1.05,
-                col: [1.0, 0.45 + Math.random() * 0.35, 0.20, 1.0]
-              });
-            }
-          }
-          // Billowing dark crimson flame smoke (FX.alpha)
-          if (FX.alpha && Math.random() < 0.60) {
-            FX.alpha.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 2.0, mouthPos[1], mouthPos[2] + (Math.random() - 0.5) * 2.0],
-              vel: [vx * 0.75, vy * 0.75 + 1.8, vz * 0.75],
-              life: 1.8 + Math.random() * 0.5,
-              size: 2.2, grow: 8.5, drag: 1.10, g: -1.8,
-              col: [0.36, 0.06, 0.06, 0.48 * bInt]
-            });
-          }
+        const spd = 42 + Math.random() * 20 * bInt;
+        const vx = fwdDir[0] * spd + (Math.random() - 0.5) * 3.5;
+        const vy = fwdDir[1] * spd + (Math.random() - 0.5) * 2.5 + 1.2;
+        const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 3.5;
+
+        if (FX.add) {
+          FX.add.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx, vy, vz],
+            life: 1.25 + Math.random() * 0.35,
+            size: 1.3 * d.scale * 0.35,
+            grow: 5.5 * d.scale * 0.35,
+            drag: 1.08,
+            g: -1.2,
+            col: [1.0, 0.08 + Math.random() * 0.14, 0.04, 0.98]
+          });
+        }
+        if (FX.alpha && Math.random() < 0.45) {
+          FX.alpha.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx * 0.7, vy * 0.7 + 1.5, vz * 0.7],
+            life: 1.4 + Math.random() * 0.4,
+            size: 1.8, grow: 6.5, drag: 1.10, g: -1.8,
+            col: [0.36, 0.06, 0.06, 0.42 * bInt]
+          });
         }
       } else if (d.element === 'ice') {
         // ICE DRAGON BREATH (Dark Blue Glacial Frost Wyrms)
-        for (let k = 0; k < 2; k++) {
-          const spd = 44 + Math.random() * 22 * bInt;
-          const swirlA = d.breathT * 12 + Math.random() * 6.28;
-          const swirlR = 2.4;
-          const vx = fwdDir[0] * spd + Math.cos(swirlA) * swirlR;
-          const vy = fwdDir[1] * spd + Math.sin(swirlA) * swirlR - 0.8;
-          const vz = fwdDir[2] * spd + (Math.random() - 0.5) * swirlR;
-          
-          // Deep dark blue / sapphire glacial ice crystal shards (FX.add)
-          if (FX.add) {
-            const col = [0.12, 0.45 + Math.random() * 0.35, 1.0, 0.98];
-            FX.add.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
-              vel: [vx, vy, vz],
-              life: 1.55 + Math.random() * 0.45,
-              size: 1.5 * d.scale * 0.35,
-              grow: 6.8 * d.scale * 0.35,
-              drag: 1.06,
-              g: 1.5,
-              col: col
-            });
-            // Diamond frost needle glints
-            if (Math.random() < 0.70) {
-              FX.add.emit({
-                pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
-                vel: [vx * 1.1, vy * 1.1, vz * 1.1],
-                life: 0.95 + Math.random() * 0.40,
-                size: 0.65, grow: 1.5, drag: 1.04,
-                col: [0.70, 0.90, 1.0, 1.0]
-              });
-            }
-          }
-          // Freezing dark blue arctic blizzard fog (FX.alpha)
-          if (FX.alpha && Math.random() < 0.65) {
-            FX.alpha.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.8, mouthPos[1], mouthPos[2] + (Math.random() - 0.5) * 1.8],
-              vel: [vx * 0.78, vy * 0.78, vz * 0.78],
-              life: 1.7 + Math.random() * 0.5,
-              size: 1.6, grow: 5.8, drag: 1.08, g: 1.0,
-              col: [0.20, 0.50, 0.92, 0.52 * bInt]
-            });
-          }
+        const spd = 38 + Math.random() * 18 * bInt;
+        const swirlA = d.breathT * 10 + Math.random() * 6.28;
+        const vx = fwdDir[0] * spd + Math.cos(swirlA) * 2.0;
+        const vy = fwdDir[1] * spd + Math.sin(swirlA) * 2.0 - 0.8;
+        const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 2.0;
+
+        if (FX.add) {
+          FX.add.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx, vy, vz],
+            life: 1.25 + Math.random() * 0.35,
+            size: 1.2 * d.scale * 0.35,
+            grow: 5.0 * d.scale * 0.35,
+            drag: 1.06,
+            g: 1.5,
+            col: [0.12, 0.48 + Math.random() * 0.35, 1.0, 0.98]
+          });
         }
       }
     }
