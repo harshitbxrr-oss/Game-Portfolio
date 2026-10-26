@@ -55,11 +55,6 @@ export function buildHtml({ dev = false } = {}) {
   }
   const left = Object.keys(IMAGES).filter((k) => html.includes(`__${k}__`));
   if (left.length) throw new Error(`unreplaced placeholders: ${left.join(', ')}`);
-  const coverPath = join(ROOT, 'case-studies', 'wallvista', 'wallvista-cover.png');
-  if (!dev && existsSync(coverPath)) {
-    const coverB64 = `data:image/png;base64,${readFileSync(coverPath).toString('base64')}`;
-    html = html.replaceAll('case-studies/wallvista/wallvista-cover.png', coverB64);
-  }
   const holoCover = join(IMG, 'ref-07-holo-interchange.jpg');
   if (!dev && existsSync(holoCover)) {
     const holoB64 = `data:image/jpeg;base64,${readFileSync(holoCover).toString('base64')}`;
@@ -111,7 +106,10 @@ function main() {
     copyFileSync(join(ROOT, 'assets', 'og-image.jpg'), join(out, 'og-image.jpg'));
     const resume = join(ROOT, 'assets', 'harshit-kumar-sinha-resume.pdf');
     if (existsSync(resume)) copyFileSync(resume, join(out, 'assets', 'harshit-kumar-sinha-resume.pdf'));
-    cpSync(join(ROOT, 'case-studies'), join(out, 'case-studies'), { recursive: true, force: true });
+    const caseStudiesDir = join(ROOT, 'case-studies');
+    if (existsSync(caseStudiesDir)) {
+      cpSync(caseStudiesDir, join(out, 'case-studies'), { recursive: true, force: true });
+    }
   }
   const shown = out === ROOT ? 'index.html' : `${args[i + 1]}/index.html`;
   console.log(`built ${shown}: ${(Buffer.byteLength(html) / 1024 / 1024).toFixed(2)} MB`);
