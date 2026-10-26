@@ -67,7 +67,9 @@ function send(res, code, type, body) {
 
 function handle(req, res) {
   // take the path straight from the request line; a malformed %-escape throws and is answered with 400 below
-  const path = decodeURIComponent(req.url.split('?')[0].split('#')[0]);
+  const urlParts = req.url.split('?');
+  const path = decodeURIComponent(urlParts[0].split('#')[0]);
+  const qs = urlParts[1] ? `?${urlParts[1]}` : '';
   if (path.includes('\0')) return send(res, 400, 'text/plain; charset=utf-8', 'Bad request');
 
   if (path === '/__reload') {
@@ -95,12 +97,24 @@ function handle(req, res) {
     return send(res, 200, TYPES['.js'], `'use strict';` + readFileSync(join(SRC, mod[1]), 'utf8'));
   }
 
-  // everything else: only assets/ and media/
-  const file = normalize(join(ROOT, path));
+  // everything else: only assets/, media/, and case-studies/
+  let file = normalize(join(ROOT, path));
   const allowed = [join(ROOT, 'assets') + sep, join(ROOT, 'media') + sep, join(ROOT, 'case-studies') + sep];
   if (!allowed.some((a) => file.startsWith(a))) return send(res, 404, 'text/plain; charset=utf-8', 'Not found');
   try {
-    if (!statSync(file).isFile()) throw new Error('not a file');
+    const st = statSync(file);
+    if (st.isDirectory()) {
+      if (!req.url.split('?')[0].endsWith('/')) {
+        res.writeHead(302, { Location: req.url.split('?')[0] + '/' + qs, 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
+      const idx = join(file, 'index.html');
+      if (statSync(idx).isFile()) file = idx;
+      else throw new Error('not a file');
+    } else if (!st.isFile()) {
+      throw new Error('not a file');
+    }
   } catch {
     return send(res, 404, 'text/plain; charset=utf-8', 'Not found');
   }
