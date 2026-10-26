@@ -109,8 +109,22 @@ window.addEventListener('beforeunload', () => {
   } catch (e) {}
 });
 
+function dismissLoader(onDone) {
+  const ld = $('#loader');
+  if (!ld || ld.classList.contains('hidden')) {
+    if (onDone) onDone();
+    return;
+  }
+  ld.classList.add('fading');
+  setTimeout(() => {
+    ld.classList.add('hidden');
+    ld.classList.remove('fading');
+    if (onDone) onDone();
+  }, 480);
+}
+
 function returnToRoad() {
-  $('#loader').classList.add('hidden');
+  dismissLoader();
   $('#tourbar').classList.add('hidden');
   document.body.classList.remove('letterbox');
   resize();
@@ -127,6 +141,9 @@ function returnToRoad() {
   } else {
     Object.assign(c, { x: 200, z: 188, yaw: 0, vx: 0, vz: 0, speed: 0, auto: 0 });
   }
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
 
   CAMFX.orbit = null;
   CAMFX.tour = null;
@@ -139,6 +156,8 @@ function returnToRoad() {
   cam.yawL = c.yaw;
   cam.orbitA = 0;
   cam.idle = 0;
+  cam.off = null;
+  cam.loff = null;
 
   $('#hud').classList.remove('hidden');
   if (!GAME.target) {
@@ -153,7 +172,7 @@ function returnToRoad() {
 
 // ---------- boot ----------
 let booted = false;
-function setProgress(p, label) { $('#ldBar i').style.width = Math.round(p * 100) + '%'; $('#ldBar').setAttribute('aria-valuenow', Math.round(p * 100)); if (label) $('#ldStatus').textContent = label; }
+function setProgress(p, label) { const pct = Math.min(100, Math.round(p * 100)); $('#ldBar i').style.width = pct + '%'; $('#ldBar').setAttribute('aria-valuenow', pct); if (label) $('#ldStatus').textContent = label; }
 async function boot() {
   const urlParams = new URLSearchParams(window.location.search);
   const shouldReturnToRoad = urlParams.get('return') === 'road' || 
@@ -173,10 +192,12 @@ async function boot() {
   applySettingsUI();
   try {
     const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();
-    await Promise.race([fontLoads, new Promise(r => setTimeout(r, 2500))]);
+    await Promise.race([fontLoads, new Promise(r => setTimeout(r, 600))]);
     setProgress(0.08, 'Loading the city');
+    await new Promise(r => requestAnimationFrame(r));
     await initGame($('#gl'), setProgress);
     buildMinimapBase(); startLoop(); booted = true;
+    setProgress(1, 'Ready when you are');
     if (shouldReturnToRoad) {
       returnToRoad();
     } else {
@@ -195,7 +216,7 @@ async function boot() {
     setTimeout(() => openQuick(true), 900);
   }
 }
-$('#btnStart').onclick = () => { if (!booted) return; $('#loader').classList.add('hidden'); resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } };
+$('#btnStart').onclick = () => { if (!booted) return; dismissLoader(() => { resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } }); };
 $('#btnQuick2').onclick = () => openQuick(!booted);
 
 // ---------- tour ----------
@@ -351,7 +372,7 @@ function buildQuick() {
 function openQuick(noGL) { lastFocus = document.activeElement; $('#quick').classList.remove('hidden'); $('#noglNote').classList.toggle('hidden', !noGL); $('#qDrive').classList.remove('hidden'); GAME.paused = true; $('#quick').scrollTop = 0; $('#qDrive').focus(); }
 function closeQuick() { $('#quick').classList.add('hidden'); GAME.paused = false; restoreFocus($('#quick')); }
 $('#btnQuick').onclick = () => openQuick(false);
-$('#qDrive').onclick = () => { closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden')) $('#btnStart').click(); } else { boot(); } };
+$('#qDrive').onclick = () => { closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) $('#btnStart').click(); } else { boot(); } };
 $('#qResume').onclick = () => { const s = [...document.querySelectorAll('#qSections section')][3]; s && s.scrollIntoView({ behavior: GAME.reduced ? 'auto' : 'smooth' }); };
 
 // ---------- map ----------

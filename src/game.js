@@ -607,16 +607,19 @@ async function initGame(canvas, onProgress) {
   if (!gl) throw new Error('nowebgl2');
   P.main = compile(SH.mainVS, SH.mainFS); P.tex = compile(SH.texVS, SH.texFS); P.flat = compile(SH.flatVS, SH.flatFS); P.part = compile(SH.partVS, SH.partFS);
   P.sky = compile(SH.skyVS, SH.skyFS); P.bright = compile(SH.quadVS, SH.brightFS); P.blur = compile(SH.quadVS, SH.blurFS); P.comp = compile(SH.quadVS, SH.compFS);
-  onProgress(0.15, 'Compiling shaders');
-  await new Promise(r => setTimeout(r, 30));
+  onProgress(0.18, 'Compiling shaders');
+  await new Promise(r => requestAnimationFrame(r));
   const rng = mulberry(20260923);
-  const G = buildWorld(rng); onProgress(0.5, 'Raising Shatranj City');
-  await new Promise(r => setTimeout(r, 30));
+  onProgress(0.35, 'Raising Shatranj City');
+  await new Promise(r => requestAnimationFrame(r));
+  const G = buildWorld(rng);
+  onProgress(0.58, 'Structuring spatial geometry');
+  await new Promise(r => requestAnimationFrame(r));
   statics = chunkGeo(G, 110);
   initVehicleMeshes();
   MESH.water = geoToMesh(buildWaterGeo());
-    MESH.speechBubble = geoToMesh(buildSpeechBubble());
-    MESH.pedArchs = [];
+  MESH.speechBubble = geoToMesh(buildSpeechBubble());
+  MESH.pedArchs = [];
   for (let a = 0; a < 6; a++) {
     const parts = buildPedArchetype(a, a);
     MESH.pedArchs.push({
@@ -633,7 +636,8 @@ async function initGame(canvas, onProgress) {
   }
   MESH.peds = MESH.pedArchs.map(a => a.body);
   MESH.pin = geoToMesh(buildPin());
-  onProgress(0.7, 'Tuning the VAJRA-S1');
+  onProgress(0.76, 'Tuning the VAJRA-S1');
+  await new Promise(r => requestAnimationFrame(r));
   // quads + flat meshes
   QUAD = (() => { const vao = gl.createVertexArray(); gl.bindVertexArray(vao); const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0, 0, 1, 0.5, -0.5, 0, 1, 1, 0.5, 0.5, 0, 1, 0, -0.5, -0.5, 0, 0, 1, 0.5, 0.5, 0, 1, 0, -0.5, 0.5, 0, 0, 0]), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12); gl.bindVertexArray(null); return { vao }; })();
   MESH.ring = staticFlat(ringVerts(7.6, 8.8, 64, [1, 1, 1, 1]).concat(ringVerts(0, 8.8, 64, [1, 1, 1, 0.18])));
@@ -650,6 +654,7 @@ async function initGame(canvas, onProgress) {
   TEX.decal = texFromCanvas(textCanvas(512, 96, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = '#E8892B'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `italic 700 72px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 6); }));
   const lm = W.landmarks.find(l => l.id === 'resume'); TEX.boardCv = document.createElement('canvas'); TEX.boardCv.width = 1024; TEX.boardCv.height = 474; drawBoard(TEX.boardCv, 1); TEX.board = texFromCanvas(TEX.boardCv); lm.boardFlip = -1;
   onProgress(0.9, 'Lighting the lanterns');
+  await new Promise(r => requestAnimationFrame(r));
   initTraffic(rng); initEcosystem();
   GAME.mood = moodVec(MOODS.golden);
   resize(); addEventListener('resize', resize);
@@ -2406,18 +2411,45 @@ function updateMood(dt) {
 
 // ---------- main loop ----------
 let lastT = 0;
+let smoothDt = 0.0166;
 function frame(ts) {
-  const dt = Math.min(0.066, (ts - lastT) / 1000 || 0.016); lastT = ts;
-  if (!GAME.paused) {
-    GAME.t += dt;
-    if (GAME.phase !== 'loading') { updateCar(dt); updateFX(dt); updateWorld(dt); updateCamera(dt); updateMood(dt); }
-    render(); GAME.emit('frame', dt);
+  if (GAME.paused) {
+    lastT = 0;
+    requestAnimationFrame(frame);
+    return;
   }
+  if (!lastT) {
+    lastT = ts;
+    requestAnimationFrame(frame);
+    return;
+  }
+  const rawDt = (ts - lastT) / 1000;
+  lastT = ts;
+  const clampedDt = Math.min(0.045, Math.max(0.001, rawDt));
+  smoothDt = smoothDt ? (smoothDt * 0.72 + clampedDt * 0.28) : clampedDt;
+  const dt = smoothDt;
+
+  GAME.t += dt;
+  if (GAME.phase !== 'loading') { updateCar(dt); updateFX(dt); updateWorld(dt); updateCamera(dt); updateMood(dt); }
+  render(); GAME.emit('frame', dt);
   requestAnimationFrame(frame);
 }
 function startLoop() { FX.alpha = FX.alpha || new Particles(3600, false); FX.add = FX.add || new Particles(3200, true); requestAnimationFrame(frame); }
 GAME.endTour = function () { GAME.phase = 'intro'; CAMFX.tour = null; GAME.beginIntro(); GAME.emit('tourEnd'); };
-GAME.beginIntro = function () { const c = GAME.car; Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0 }); c.auto = GAME.reduced ? 0 : 3.6; CAMFX.orbit = { t: 0, len: GAME.reduced ? 0.01 : 4.5, from: -2.35, d0: 5.2, h0: 1.0 }; GAME.cam.pos = [c.x - 4, 1.1, c.z - 4]; GAME.cam.look = [c.x, 0.7, c.z]; GAME.phase = 'intro'; };
+GAME.beginIntro = function () {
+  const c = GAME.car;
+  Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0 });
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
+  c.auto = GAME.reduced ? 0 : 3.6;
+  CAMFX.orbit = { t: 0, len: GAME.reduced ? 0.01 : 4.5, from: -2.35, d0: 5.2, h0: 1.0 };
+  GAME.cam.pos = [c.x - 4, 1.1, c.z - 4];
+  GAME.cam.look = [c.x, 0.7, c.z];
+  GAME.cam.off = null;
+  GAME.cam.loff = null;
+  GAME.phase = 'intro';
+};
 GAME.startTour = function () {
   GAME.phase = 'tour'; CAMFX.tour = { t: 0, len: 2.6, shots: [
     [[140, 70, -70], [175, 52, -140], [208, 18, -190], [208, 22, -196]],
@@ -2430,7 +2462,21 @@ GAME.enter = function () {
   if (GAME.phase !== 'driving' || !GAME.nearLm) return; const { lm, i } = GAME.nearLm; GAME.activeLm = { lm, i }; GAME.phase = 'entering'; startHero(lm, i);
 };
 GAME.exit = function () { if (GAME.phase !== 'panel' && GAME.phase !== 'entering') return; const cam = GAME.cam; CAMFX.hero = { t: 0, len: GAME.reduced ? 0.01 : 0.8, from: { pos: cam.pos.slice(), look: cam.look.slice() } }; GAME.phase = 'exiting'; };
-GAME.teleport = function (x, z, yaw) { const c = GAME.car; Object.assign(c, { x, z, yaw, vx: 0, vz: 0, steer: 0 }); GAME.cam.yawL = yaw; const f = [-Math.sin(yaw), -Math.cos(yaw)]; GAME.cam.pos = [x - f[0] * 18, 26, z - f[1] * 18 + 0.01]; GAME.cam.look = [x, 0.8, z]; TRAIL.length = 0; lastWheels = null; };
+GAME.teleport = function (x, z, yaw) {
+  const c = GAME.car;
+  Object.assign(c, { x, z, yaw, vx: 0, vz: 0, steer: 0 });
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
+  GAME.cam.yawL = yaw;
+  const f = [-Math.sin(yaw), -Math.cos(yaw)];
+  GAME.cam.pos = [x - f[0] * 18, 26, z - f[1] * 18 + 0.01];
+  GAME.cam.look = [x, 0.8, z];
+  GAME.cam.off = null;
+  GAME.cam.loff = null;
+  TRAIL.length = 0;
+  lastWheels = null;
+};
 GAME.setTarget = function (id) { GAME.target = id; GAME.refreshRoute(); };
 GAME.refreshRoute = function () { if (!GAME.target) { GAME.route = []; return; } const lm = W.landmarks.find(l => l.id === GAME.target); const t = lm.trig.slice().sort((a, b) => Math.hypot(a[0] - GAME.car.x, a[1] - GAME.car.z) - Math.hypot(b[0] - GAME.car.x, b[1] - GAME.car.z))[0]; GAME.route = routeTo(t[0], t[1]); };
 GAME.setQuality = function (q) { GAME.quality = q; resize(); };
