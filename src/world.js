@@ -620,8 +620,16 @@ function buildWorld(rng) {
   }
 
   // ---------- Garage (spawn) + Central Park ----------
-  { G.flat(-12, 140, 12, 164, 0.07, hex('#F2F2F0'), 4); for (const [x, z] of [[-11.5, 140.5], [11.5, 140.5], [-11.5, 163.5], [11.5, 163.5]]) { G.prism(x, 0, z, 0.3, 0.3, 6.5, 8, hex('#dfe6ea'), 6); addCircle(x, z, 0.4); }
-    G.block(-12.5, 139.5, 12.5, 164.5, 6.5, 7.1, hex('#F4F4F2')); G.block(-10, 142, 10, 162, 6.45, 6.5, hex('#FFFFFF'), 1, 1.2);
+  { G.flat(-12, 140, 12, 164, 0.07, hex('#F2F2F0'), 4); for (const [x, z] of [[-11.5, 140.5], [11.5, 140.5], [-11.5, 163.5], [11.5, 163.5]]) { G.prism(x, 0, z, 0.35, 0.35, 6.6, 8, hex('#334155'), 6); addCircle(x, z, 0.4); }
+    // Sleek open-skylight architectural pergola canopy (lets the sky & dragons shine through!)
+    G.block(-12.5, 139.5, 12.5, 141.2, 6.5, 7.1, hex('#1e293b')); // Front lintel
+    G.block(-12.5, 162.8, 12.5, 164.5, 6.5, 7.1, hex('#1e293b')); // Rear lintel
+    G.block(-12.5, 141.2, -10.8, 162.8, 6.5, 7.1, hex('#1e293b')); // Left perimeter beam
+    G.block(10.8, 141.2, 12.5, 162.8, 6.5, 7.1, hex('#1e293b')); // Right perimeter beam
+    G.block(-0.35, 141.2, 0.35, 162.8, 6.65, 7.05, hex('#38BDF8')); // Illuminated cyber spine beam
+    for (let rz = 144.5; rz < 162; rz += 4.2) {
+      G.block(-10.8, rz - 0.22, 10.8, rz + 0.22, 6.7, 7.0, hex('#475569')); // Open skylight rafters
+    }
     addSign(roadSign(['VAJRA GARAGE'], { bg: '#0A5AA8' }), 0, 7.9, 139.4, Math.PI, 9, 2.2, 1.0);
     for (let i = 0; i < 90; i++) { const x = -55 + rng() * 110, z = 170 + rng() * 92; if (Math.abs(x) < 11 || Math.hypot(x - 30, z - 215) < 8) continue; tree(G, x, z, 0.85 + rng() * 0.65, rng); }
     // Parkland tree groves safely placed in open green meadows away from roads

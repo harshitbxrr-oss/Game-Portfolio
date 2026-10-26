@@ -478,34 +478,34 @@ function initEcosystem() {
   DRAGONS.length = 0;
 
   const dragonConfigs = [
-    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner high-sky circular orbit
+    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner sky circular orbit
     { id: 'obsidian', element: 'ice',
       bodyMesh: 'dragon_body_obsidian', headMesh: 'dragon_head_obsidian',
       tail1Mesh: 'dragon_tail1_obsidian', tail2Mesh: 'dragon_tail2_obsidian',
       wingL: 'dragonWingL_obsidian', wingR: 'dragonWingR_obsidian', mesh: 'dragon_obsidian',
-      cx: 0, cz: -10, radius: 125, orbitSpeed: 0.16, dir: 1, baseAlt: 210, altAmp: 8, altFreq: 0.32, phaseOffset: 0.0,
-      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 6.5 },
-    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise circular orbit in high sky
+      cx: 0, cz: -10, radius: 110, orbitSpeed: 0.16, dir: 1, baseAlt: 62, altAmp: 6, altFreq: 0.32, phaseOffset: 0.0,
+      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 18.0 },
+    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise circular orbit in sky
     { id: 'volcanic', element: 'fire',
       bodyMesh: 'dragon_body_volcanic', headMesh: 'dragon_head_volcanic',
       tail1Mesh: 'dragon_tail1_volcanic', tail2Mesh: 'dragon_tail2_volcanic',
       wingL: 'dragonWingL_volcanic', wingR: 'dragonWingR_volcanic', mesh: 'dragon_volcanic',
-      cx: 0, cz: -10, radius: 165, orbitSpeed: 0.125, dir: -1, baseAlt: 235, altAmp: 9, altFreq: 0.28, phaseOffset: 1.8,
-      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 7.5 },
+      cx: 0, cz: -10, radius: 145, orbitSpeed: 0.125, dir: -1, baseAlt: 74, altAmp: 7, altFreq: 0.28, phaseOffset: 1.8,
+      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 20.0 },
     // 3. Deep Sapphire Dark Blue Ice Dragon: High Cloud Navigator (Emits DARK BLUE ICE breath) - wide clockwise circular orbit
     { id: 'jade', element: 'ice',
       bodyMesh: 'dragon_body_jade', headMesh: 'dragon_head_jade',
       tail1Mesh: 'dragon_tail1_jade', tail2Mesh: 'dragon_tail2_jade',
       wingL: 'dragonWingL_jade', wingR: 'dragonWingR_jade', mesh: 'dragon_jade',
-      cx: 0, cz: -10, radius: 205, orbitSpeed: 0.10, dir: 1, baseAlt: 260, altAmp: 10, altFreq: 0.24, phaseOffset: 3.6,
-      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 8.0 },
-    // 4. Scarlet Red Fire Dragon: Celestial Sky Sovereign (Emits RED FIRE breath) - apex stratospheric circular orbit
+      cx: 0, cz: -10, radius: 180, orbitSpeed: 0.10, dir: 1, baseAlt: 86, altAmp: 8, altFreq: 0.24, phaseOffset: 3.6,
+      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 22.0 },
+    // 4. Scarlet Red Fire Dragon: Celestial Sky Sovereign (Emits RED FIRE breath) - apex sky circular orbit
     { id: 'gold', element: 'fire',
       bodyMesh: 'dragon_body_gold', headMesh: 'dragon_head_gold',
       tail1Mesh: 'dragon_tail1_gold', tail2Mesh: 'dragon_tail2_gold',
       wingL: 'dragonWingL_gold', wingR: 'dragonWingR_gold', mesh: 'dragon_gold',
-      cx: 0, cz: -10, radius: 245, orbitSpeed: 0.082, dir: -1, baseAlt: 285, altAmp: 11, altFreq: 0.20, phaseOffset: 5.2,
-      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 9.0 }
+      cx: 0, cz: -10, radius: 215, orbitSpeed: 0.082, dir: -1, baseAlt: 98, altAmp: 9, altFreq: 0.20, phaseOffset: 5.2,
+      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 25.0 }
   ];
   for (const dc of dragonConfigs) {
     const initBreathT = dc.id === 'volcanic' ? 0.2 : dc.id === 'gold' ? 2.4 : dc.id === 'obsidian' ? 1.2 : 3.6;
@@ -2394,20 +2394,21 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 function startLoop() { FX.alpha = FX.alpha || new Particles(3600, false); FX.add = FX.add || new Particles(3200, true); requestAnimationFrame(frame); }
-GAME.endTour = function () { GAME.phase = 'intro'; CAMFX.tour = null; GAME.beginIntro(); GAME.emit('tourEnd'); };
+GAME.endTour = function () { CAMFX.tour = null; GAME.beginIntro(); GAME.emit('tourEnd'); };
 GAME.beginIntro = function () {
   const c = GAME.car;
-  Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0 });
+  Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0, speed: 0, vf: 0, vl: 0, auto: 0 });
   c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
   if (typeof PH !== 'undefined') PH.acc = 0;
   GAME.view = c;
-  c.auto = GAME.reduced ? 0 : 3.6;
-  CAMFX.orbit = { t: 0, len: GAME.reduced ? 0.01 : 4.5, from: -2.35, d0: 5.2, h0: 1.0 };
-  GAME.cam.pos = [c.x - 4, 1.1, c.z - 4];
-  GAME.cam.look = [c.x, 0.7, c.z];
+  c.auto = 0;
+  CAMFX.orbit = null;
+  GAME.cam.pos = [c.x, 2.15, c.z + 6.6];
+  GAME.cam.look = [c.x, 0.8, c.z - 8];
   GAME.cam.off = null;
   GAME.cam.loff = null;
-  GAME.phase = 'intro';
+  GAME.phase = 'driving';
+  GAME.emit('driving');
 };
 GAME.startTour = function () {
   GAME.phase = 'tour'; CAMFX.tour = { t: 0, len: 2.6, shots: [

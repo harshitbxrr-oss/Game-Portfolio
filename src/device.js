@@ -28,9 +28,13 @@ function devSet(k, v) {
 addEventListener('resize', detectDevice); addEventListener('orientationchange', () => setTimeout(detectDevice, 200));
 // a physical keyboard or controller on a touch device hides the on-screen controls; touching the screen brings them back
 addEventListener('keydown', e => {
+  if (GAME.phase === 'intro') { GAME.beginIntro(); }
   if (KEYMAP[e.code] && DEV.tc === 'auto' && DEV.touchCap && !DEV.usedKeys && booted && $('#loader').classList.contains('hidden')) { DEV.usedKeys = true; detectDevice(); toast('Keyboard detected, on-screen controls hidden'); }
 }, true);
-addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && DEV.usedKeys) { DEV.usedKeys = false; detectDevice(); } }, true);
+addEventListener('pointerdown', e => {
+  if (GAME.phase === 'intro') { GAME.beginIntro(); }
+  if (e.pointerType === 'touch' && DEV.usedKeys) { DEV.usedKeys = false; detectDevice(); }
+}, true);
 
 // ---------- camera: change rig, drag to look around, wheel or pinch to zoom ----------
 function camCycle() { GAME.cycleCam(); }
