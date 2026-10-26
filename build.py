@@ -41,9 +41,14 @@ def main():
         html = html.replace('case-studies/wallvista/wallvista-cover.png', cover_b64)
     out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'index.html'
     out.write_text(html, encoding='utf-8')
-    case_study = ROOT / 'case-studies' / 'wallvista'
     if out.resolve().parent != ROOT:
-        shutil.copytree(case_study, out.resolve().parent / 'case-studies' / 'wallvista', dirs_exist_ok=True)
+        out_dir = out.resolve().parent
+        (out_dir / 'assets').mkdir(parents=True, exist_ok=True)
+        for name in ('og-image.jpg', 'harshit-kumar-sinha-resume.pdf'):
+            src_file = ROOT / 'assets' / name
+            if src_file.exists():
+                shutil.copy2(src_file, out_dir / 'assets' / name)
+        shutil.copytree(ROOT / 'case-studies', out_dir / 'case-studies', dirs_exist_ok=True)
     print(f'built {out.name}: {len(html) / 1024 / 1024:.2f} MB')
 
 if __name__ == '__main__':

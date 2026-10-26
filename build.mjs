@@ -108,7 +108,9 @@ function main() {
   if (out !== ROOT) {
     mkdirSync(join(out, 'assets'), { recursive: true });
     copyFileSync(join(ROOT, 'assets', 'og-image.jpg'), join(out, 'assets', 'og-image.jpg'));
-    cpSync(join(ROOT, 'case-studies', 'wallvista'), join(out, 'case-studies', 'wallvista'), { recursive: true, force: true });
+    const resume = join(ROOT, 'assets', 'harshit-kumar-sinha-resume.pdf');
+    if (existsSync(resume)) copyFileSync(resume, join(out, 'assets', 'harshit-kumar-sinha-resume.pdf'));
+    cpSync(join(ROOT, 'case-studies'), join(out, 'case-studies'), { recursive: true, force: true });
   }
   const shown = out === ROOT ? 'index.html' : `${args[i + 1]}/index.html`;
   console.log(`built ${shown}: ${(Buffer.byteLength(html) / 1024 / 1024).toFixed(2)} MB`);
