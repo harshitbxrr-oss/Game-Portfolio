@@ -51,7 +51,7 @@ export function buildHtml({ dev = false } = {}) {
     let name = origName;
     const baseName = origName.replace(/\.[^.]+$/, '');
     const webpName = baseName + '.webp';
-    if (key !== 'REF03' && !dev && existsSync(join(IMG, webpName))) {
+    if (!dev && existsSync(join(IMG, webpName))) {
       name = webpName;
     }
     const ext = extname(name).toLowerCase();

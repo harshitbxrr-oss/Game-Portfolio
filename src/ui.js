@@ -120,7 +120,7 @@ function dismissLoader(onDone) {
     ld.classList.add('hidden');
     ld.classList.remove('fading');
     if (onDone) onDone();
-  }, 480);
+  }, 220);
 }
 
 function returnToRoad() {
@@ -201,13 +201,18 @@ async function boot() {
     setProgress(0.2, 'Loading the city');
     await initGame($('#gl'), setProgress, fontLoads);
     buildMinimapBase(); startLoop(); booted = true;
-    setProgress(1, 'Ready when you are');
+    setProgress(1, 'Ready');
     if (shouldReturnToRoad) {
       returnToRoad();
     } else {
       $('#btnStart').disabled = false;
-      $('#ldStatus').textContent = 'Ready when you are';
-      $('#btnStart').focus();
+      $('#ldStatus').textContent = 'Starting...';
+      // Auto-enter immediately so the player never waits on the loading screen!
+      setTimeout(() => {
+        if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+          $('#btnStart').click();
+        }
+      }, 100);
     }
     $('#gl').addEventListener('webglcontextlost', e => { e.preventDefault(); openQuick(true); });
   } catch (err) {
@@ -224,6 +229,12 @@ async function boot() {
 }
 $('#btnStart').onclick = () => { if (!booted) return; if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); dismissLoader(() => { resize(); GAME.beginIntro(); }); };
 $('#btnQuick2').onclick = () => openQuick(!booted);
+$('#loader').addEventListener('click', (e) => {
+  if (e.target.closest('#btnQuick2')) return;
+  if (booted && !$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+    $('#btnStart').click();
+  }
+});
 
 // ---------- tour ----------
 const TOUR_CAPS = [['Ancient Temple Complex', 'प्राचीन मंदिर परिसर'], ['Old City', 'पुराना शहर'], ['Victoria Bridge', 'विक्टोरिया पुल'], ['Modern Business District', 'व्यापार केंद्र']];
