@@ -16,9 +16,9 @@ const screens = [
 
 const grid = document.querySelector("#screen-grid");
 const dialog = document.querySelector("#screen-dialog");
-const dialogImage = dialog ? dialog.querySelector(".dialog-image-wrap img") : null;
-const dialogTitle = dialog ? dialog.querySelector(".dialog-title") : null;
-const dialogCounter = dialog ? dialog.querySelector(".dialog-bottom span") : null;
+const dialogImage = dialog.querySelector(".dialog-image-wrap img");
+const dialogTitle = dialog.querySelector(".dialog-title");
+const dialogCounter = dialog.querySelector(".dialog-bottom span");
 const tabs = [...document.querySelectorAll(".gallery-tab")];
 const imageFolder = "./Wall%20Vista%20Screens/";
 const wireframeFolder = "./Wireframes/";
@@ -34,7 +34,6 @@ function imagePath(index, mode = galleryMode) {
 }
 
 function renderGallery() {
-  if (!grid) return;
   grid.replaceChildren();
   screens.forEach(([number, title], index) => {
     const button = document.createElement("button");
@@ -63,220 +62,166 @@ function renderGallery() {
     label.textContent = title;
     caption.append(count, label);
     button.append(thumb, caption);
-
     button.addEventListener("click", () => openScreen(index));
     grid.append(button);
   });
 }
 
 function updateDialog() {
-  if (!dialog || !dialogImage || !dialogTitle || !dialogCounter) return;
   const [number, title] = screens[selectedScreen];
   const modeLabel = galleryMode === "wireframes" ? "Wireframe" : "Designed screen";
   dialogImage.src = imagePath(selectedScreen);
   dialogImage.alt = `${modeLabel}: ${title}`;
   dialogTitle.textContent = `${number} / ${String(screens.length).padStart(2, "0")}  ·  ${title} — ${modeLabel}`;
   dialogCounter.textContent = `${number} / ${String(screens.length).padStart(2, "0")}`;
-  const prevBtn = dialog.querySelector(".dialog-prev");
-  const nextBtn = dialog.querySelector(".dialog-next");
-  if (prevBtn) prevBtn.disabled = selectedScreen === 0;
-  if (nextBtn) nextBtn.disabled = selectedScreen === screens.length - 1;
+  dialog.querySelector(".dialog-prev").disabled = selectedScreen === 0;
+  dialog.querySelector(".dialog-next").disabled = selectedScreen === screens.length - 1;
 }
 
 function openScreen(index) {
   selectedScreen = index;
   updateDialog();
-  if (dialog && !dialog.open) {
-    dialog.showModal();
-    document.body.style.overflow = "hidden";
-  }
-}
-
-function closeScreen() {
-  if (dialog && dialog.open) {
-    dialog.close();
-    document.body.style.overflow = "";
-  }
-}
-
-function stepScreen(delta) {
-  const next = selectedScreen + delta;
-  if (next >= 0 && next < screens.length) {
-    selectedScreen = next;
-    updateDialog();
-  }
+  dialog.showModal();
 }
 
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
-    galleryMode = tab.dataset.galleryMode || tab.dataset.mode || "screens";
+    galleryMode = tab.dataset.galleryMode;
     tabs.forEach((item) => {
       const active = item === tab;
       item.classList.toggle("is-active", active);
-      item.classList.toggle("active", active);
       item.setAttribute("aria-pressed", String(active));
     });
     renderGallery();
-    if (dialog && dialog.open) updateDialog();
   });
 });
 
-if (dialog) {
-  dialog.querySelector(".dialog-close")?.addEventListener("click", closeScreen);
-  dialog.querySelector(".dialog-prev")?.addEventListener("click", () => stepScreen(-1));
-  dialog.querySelector(".dialog-next")?.addEventListener("click", () => stepScreen(1));
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) closeScreen();
-  });
-  dialog.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeScreen();
-      return;
-    }
-    if (event.key === "ArrowLeft") stepScreen(-1);
-    if (event.key === "ArrowRight") stepScreen(1);
-  });
-}
+dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
+dialog.querySelector(".dialog-prev").addEventListener("click", () => {
+  if (selectedScreen > 0) {
+    selectedScreen -= 1;
+    updateDialog();
+  }
+});
+dialog.querySelector(".dialog-next").addEventListener("click", () => {
+  if (selectedScreen < screens.length - 1) {
+    selectedScreen += 1;
+    updateDialog();
+  }
+});
+dialog.addEventListener("click", (event) => {
+  if (event.target === dialog) dialog.close();
+});
+dialog.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    dialog.close();
+    return;
+  }
+  if (event.key === "ArrowLeft" && selectedScreen > 0) {
+    selectedScreen -= 1;
+    updateDialog();
+  }
+  if (event.key === "ArrowRight" && selectedScreen < screens.length - 1) {
+    selectedScreen += 1;
+    updateDialog();
+  }
+});
 
-renderGallery();
-
-// Theme and Navigation Handling
+const menuToggle = document.querySelector(".menu-toggle");
+const siteNav = document.querySelector("#site-nav");
 const themeToggle = document.querySelector(".theme-toggle");
-const themeIcon = themeToggle ? themeToggle.querySelector(".theme-icon") : null;
-const themeLabel = themeToggle ? themeToggle.querySelector(".theme-label") : null;
+const themeIcon = themeToggle.querySelector(".theme-icon");
+const themeLabel = themeToggle.querySelector(".theme-label");
 const themeColor = document.querySelector('meta[name="theme-color"]');
 const prototypeFrame = document.querySelector(".prototype-embed iframe");
-const menuToggle = document.querySelector(".menu-toggle");
-const siteNav = document.querySelector("#site-nav") || document.querySelector(".site-nav");
-const themeStorageKey = "portfolio-theme";
-const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-function readThemePreference() {
-  try {
-    const savedTheme = window.localStorage.getItem(themeStorageKey) || window.localStorage.getItem("wv_theme");
-    return savedTheme === "dark" || savedTheme === "light" ? savedTheme : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function resizePrototypeFrame(frameDocument) {
-  try {
-    if (!frameDocument || !prototypeFrame) return;
-    const bodyHeight = frameDocument.body ? frameDocument.body.scrollHeight : 0;
-    const docHeight = frameDocument.documentElement ? frameDocument.documentElement.scrollHeight : 0;
-    const contentHeight = Math.max(bodyHeight, docHeight);
-    if (contentHeight > 300) {
-      prototypeFrame.style.height = `${contentHeight + 10}px`;
-    }
-  } catch (e) {}
-}
 
 function syncPrototypeTheme() {
   try {
     if (!prototypeFrame) return;
     const frameDocument = prototypeFrame.contentDocument;
     if (frameDocument && frameDocument.documentElement) {
-      const currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-      frameDocument.documentElement.dataset.theme = currentTheme;
+      frameDocument.documentElement.dataset.theme =
+        document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      const protoEl = document.querySelector(".prototype");
+      if (protoEl) {
+        frameDocument.body.style.backgroundColor =
+          getComputedStyle(protoEl).backgroundColor;
+      }
       resizePrototypeFrame(frameDocument);
     }
   } catch (e) {
-    // Sandbox or cross-origin fallback
+    // Cross-origin or sandbox safeguard
   }
 }
 
-if (prototypeFrame) {
-  prototypeFrame.addEventListener("load", () => {
-    syncPrototypeTheme();
-    setTimeout(syncPrototypeTheme, 350);
-  });
+function resizePrototypeFrame(frameDocument) {
+  try {
+    if (!frameDocument || !prototypeFrame) return;
+    const contentHeight = Math.max(
+      frameDocument.documentElement.scrollHeight,
+      frameDocument.body.scrollHeight,
+      750
+    );
+    prototypeFrame.style.height = `${contentHeight}px`;
+  } catch (e) {}
 }
+
+prototypeFrame.addEventListener("load", syncPrototypeTheme);
 window.addEventListener("resize", syncPrototypeTheme);
 
-const sunIcon = '<circle cx="12" cy="12" r="4.3"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/>';
+const sunIcon = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
 const moonIcon = '<path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a7 7 0 0 0 10.2 10.2z"/>';
 
-function applyTheme(theme, persist = false) {
-  const enableDarkMode = theme === "dark";
+function applyTheme(enableDarkMode) {
   document.documentElement.dataset.theme = enableDarkMode ? "dark" : "light";
+
   if (themeToggle) {
     themeToggle.setAttribute("aria-pressed", String(enableDarkMode));
-    themeToggle.setAttribute("aria-label", `Switch to ${enableDarkMode ? "light" : "dark"} mode`);
+    themeToggle.setAttribute("aria-label", enableDarkMode ? "Switch to light mode" : "Switch to dark mode");
   }
-  if (themeIcon) {
-    themeIcon.innerHTML = enableDarkMode ? sunIcon : moonIcon;
-  }
-  if (themeLabel) {
-    themeLabel.textContent = enableDarkMode ? "Light mode" : "Dark mode";
-  }
-  if (themeColor) {
-    themeColor.content = enableDarkMode ? "#171715" : "#f7f5f0";
-  }
-  if (persist) {
-    try {
-      window.localStorage.setItem(themeStorageKey, theme);
-      window.localStorage.setItem("wv_theme", theme);
-    } catch (e) {}
-  }
+
+  if (themeIcon) themeIcon.innerHTML = enableDarkMode ? sunIcon : moonIcon;
+  if (themeLabel) themeLabel.textContent = enableDarkMode ? "Light mode" : "Dark mode";
+  if (themeColor) themeColor.content = enableDarkMode ? "#171715" : "#f7f5f0";
   syncPrototypeTheme();
 }
 
-// Initial theme resolution
 const urlParams = new URLSearchParams(window.location.search);
-const fromGame = urlParams.get("from") === "game";
-const explicitTheme = urlParams.get("theme");
+const savedTheme = localStorage.getItem("wv_theme");
+const isDarkInit = urlParams.get("theme") === "dark" || urlParams.get("from") === "game" || savedTheme === "dark" || (!savedTheme && urlParams.get("theme") !== "light");
+applyTheme(isDarkInit);
 
-let initialTheme = explicitTheme || readThemePreference();
-if (!initialTheme) {
-  initialTheme = fromGame || systemDark ? "dark" : "light";
-}
-applyTheme(initialTheme);
-
-// Handle return navigation and labels
-const returnLinks = document.querySelectorAll('.portfolio-return, a[href*="index.html"]');
-if (fromGame) {
-  returnLinks.forEach((link) => {
-    link.textContent = link.textContent.replace('Back to portfolio', 'Back to road');
-  });
-}
-
-returnLinks.forEach((link) => {
+document.querySelectorAll('.portfolio-return, a[href*="index.html"], a[href*="return=road"]').forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
     const path = window.location.pathname;
     const base = path.includes('/case-studies/') 
       ? path.slice(0, path.indexOf('/case-studies/')) 
       : '';
-    window.location.href = (base || '') + (fromGame ? '/index.html?return=road' : '/index.html#home');
+    window.location.href = (base || '') + '/index.html?return=road';
   });
 });
 
-if (themeToggle) {
-  themeToggle.addEventListener("click", () => {
-    const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    applyTheme(nextTheme, true);
-  });
-}
+themeToggle.addEventListener("click", () => {
+  const enableDarkMode = document.documentElement.dataset.theme !== "dark";
+  applyTheme(enableDarkMode);
+  localStorage.setItem("wv_theme", enableDarkMode ? "dark" : "light");
+});
 
-if (menuToggle && siteNav) {
-  menuToggle.addEventListener("click", () => {
-    const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
-    menuToggle.setAttribute("aria-expanded", String(!isOpen));
-    menuToggle.setAttribute("aria-label", isOpen ? "Open navigation" : "Close navigation");
-    siteNav.classList.toggle("is-open", !isOpen);
-  });
+menuToggle.addEventListener("click", () => {
+  const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
+  menuToggle.setAttribute("aria-expanded", String(!isOpen));
+  menuToggle.setAttribute("aria-label", isOpen ? "Open navigation" : "Close navigation");
+  siteNav.classList.toggle("is-open", !isOpen);
+});
+siteNav.addEventListener("click", (event) => {
+  if (event.target.closest("a")) {
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.setAttribute("aria-label", "Open navigation");
+    siteNav.classList.remove("is-open");
+  }
+});
 
-  siteNav.addEventListener("click", (event) => {
-    if (event.target.closest("a")) {
-      menuToggle.setAttribute("aria-expanded", "false");
-      menuToggle.setAttribute("aria-label", "Open navigation");
-      siteNav.classList.remove("is-open");
-    }
-  });
-}
-
-// Smooth reveal on scroll
 const revealObserver = "IntersectionObserver" in window
   ? new IntersectionObserver((entries, observer) => {
       entries.forEach((entry) => {
@@ -293,3 +238,5 @@ document.querySelectorAll(".section-index, .intro-grid, .problem-grid, .context-
   if (revealObserver) revealObserver.observe(element);
   else element.classList.add("is-visible");
 });
+
+renderGallery();
