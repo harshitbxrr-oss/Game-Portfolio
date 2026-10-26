@@ -1,0 +1,53 @@
+# GitHub Pages: rebuilds the site from src/ on every push to main and publishes it.
+#
+# Setup:
+#   1. Move this file to  .github/workflows/deploy.yml  in your repository.
+#   2. On GitHub: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+#   3. Push to main. The site appears at https://<your-username>.github.io/<repository-name>/
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build the single-file site into _site/
+        run: |
+          node build.mjs --out _site
+          touch _site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,3 @@
+# Only needed when deploying with the Vercel CLI: skip files the site doesn't use
+media/
+assets/source-art/

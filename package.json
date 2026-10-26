@@ -1,0 +1,17 @@
+{
+  "name": "shatranj-city",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shatranj City: a drivable 3D portfolio for Harshit Kumar Sinha, UI/UX Designer. Raw WebGL 2, no dependencies.",
+  "scripts": {
+    "start": "node dev.mjs",
+    "dev": "node dev.mjs",
+    "build": "node build.mjs",
+    "check": "node build.mjs --check",
+    "build:py": "python build.py"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

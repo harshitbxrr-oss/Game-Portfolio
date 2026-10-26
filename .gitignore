@@ -1,0 +1,16 @@
+# Dependencies and tooling
+node_modules/
+.vercel/
+
+# Local builds
+_site/
+public/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# Python
+__pycache__/
+*.pyc

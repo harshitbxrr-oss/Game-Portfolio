@@ -1,0 +1,35 @@
+{
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.formatOnSave": false,
+  "editor.formatOnPaste": false,
+  "html.format.enable": false,
+  "editor.wordWrap": "off",
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "files.insertFinalNewline": true,
+  "search.exclude": {
+    "index.html": true,
+    "public": true,
+    "**/media": true,
+    "**/assets": true
+  },
+  "files.watcherExclude": {
+    "**/media/**": true,
+    "**/assets/**": true,
+    "**/node_modules/**": true
+  },
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  },
+  "liveServer.settings.root": "/",
+  "liveServer.settings.port": 5500,
+  "liveServer.settings.ignoreFiles": [
+    ".vscode/**",
+    "src/**",
+    "media/**",
+    "assets/source-art/**",
+    "deploy/**",
+    "**/*.md"
+  ]
+}
