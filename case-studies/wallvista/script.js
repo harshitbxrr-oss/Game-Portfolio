@@ -136,22 +136,34 @@ const themeColor = document.querySelector('meta[name="theme-color"]');
 const prototypeFrame = document.querySelector(".prototype-embed iframe");
 
 function syncPrototypeTheme() {
-  const frameDocument = prototypeFrame.contentDocument;
-  if (frameDocument && frameDocument.documentElement) {
-    frameDocument.documentElement.dataset.theme =
-      document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    frameDocument.body.style.backgroundColor =
-      getComputedStyle(document.querySelector(".prototype")).backgroundColor;
-    resizePrototypeFrame(frameDocument);
+  try {
+    if (!prototypeFrame) return;
+    const frameDocument = prototypeFrame.contentDocument;
+    if (frameDocument && frameDocument.documentElement) {
+      frameDocument.documentElement.dataset.theme =
+        document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      const protoEl = document.querySelector(".prototype");
+      if (protoEl) {
+        frameDocument.body.style.backgroundColor =
+          getComputedStyle(protoEl).backgroundColor;
+      }
+      resizePrototypeFrame(frameDocument);
+    }
+  } catch (e) {
+    // Cross-origin or sandbox safeguard
   }
 }
 
 function resizePrototypeFrame(frameDocument) {
-  const contentHeight = Math.max(
-    frameDocument.documentElement.scrollHeight,
-    frameDocument.body.scrollHeight,
-  );
-  prototypeFrame.style.height = `${contentHeight}px`;
+  try {
+    if (!frameDocument || !prototypeFrame) return;
+    const contentHeight = Math.max(
+      frameDocument.documentElement.scrollHeight,
+      frameDocument.body.scrollHeight,
+      750
+    );
+    prototypeFrame.style.height = `${contentHeight}px`;
+  } catch (e) {}
 }
 
 prototypeFrame.addEventListener("load", syncPrototypeTheme);
@@ -163,16 +175,15 @@ const moonIcon = '<path d="M20 14.2A8.5 8.5 0 1 1 9.8 4a7 7 0 0 0 10.2 10.2z"/>'
 function applyTheme(enableDarkMode) {
   document.documentElement.dataset.theme = enableDarkMode ? "dark" : "light";
 
-
-
-  themeToggle.setAttribute("aria-pressed", String(enableDarkMode));
-
+  if (themeToggle) {
+    themeToggle.setAttribute("aria-pressed", String(enableDarkMode));
+    themeToggle.setAttribute("aria-label", enableDarkMode ? "Switch to light mode" : "Switch to dark mode");
+  }
 
   if (themeIcon) themeIcon.innerHTML = enableDarkMode ? sunIcon : moonIcon;
   if (themeLabel) themeLabel.textContent = enableDarkMode ? "Light mode" : "Dark mode";
   if (themeColor) themeColor.content = enableDarkMode ? "#171715" : "#f7f5f0";
   syncPrototypeTheme();
-
 }
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -180,10 +191,14 @@ const savedTheme = localStorage.getItem("wv_theme");
 const isDarkInit = urlParams.get("theme") === "dark" || urlParams.get("from") === "game" || savedTheme === "dark" || (!savedTheme && urlParams.get("theme") !== "light");
 applyTheme(isDarkInit);
 
-document.querySelectorAll('.portfolio-return, a[href*="index.html"]').forEach((link) => {
+document.querySelectorAll('.portfolio-return, a[href*="index.html"], a[href*="return=road"]').forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    window.location.href = '../../index.html?return=road';
+    const path = window.location.pathname;
+    const base = path.includes('/case-studies/') 
+      ? path.slice(0, path.indexOf('/case-studies/')) 
+      : '';
+    window.location.href = (base || '') + '/index.html?return=road';
   });
 });
 
@@ -191,16 +206,6 @@ themeToggle.addEventListener("click", () => {
   const enableDarkMode = document.documentElement.dataset.theme !== "dark";
   applyTheme(enableDarkMode);
   localStorage.setItem("wv_theme", enableDarkMode ? "dark" : "light");
-
-
-
-  themeToggle.setAttribute("aria-pressed", String(enableDarkMode));
-
-
-
-
-
-
 });
 
 menuToggle.addEventListener("click", () => {

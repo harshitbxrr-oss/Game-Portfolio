@@ -366,7 +366,7 @@ h2 { margin-bottom: 0; font: 600 clamp(39px, 5vw, 69px)/1.06 var(--font-display)
   .prototype-heading h2 { font-size: clamp(45px, 12vw, 64px); }
   .prototype-copy { max-width: 410px; }
   .prototype-embed { margin-top: 30px; }
-  .prototype-embed iframe { min-height: 0; }
+  .prototype-embed iframe { min-height: 750px; }
   .closing { min-height: 380px; }
   .closing h2 { font-size: clamp(47px, 12vw, 69px); }
   .site-footer { min-height: 100px; flex-wrap: wrap; gap: 8px 20px; }
