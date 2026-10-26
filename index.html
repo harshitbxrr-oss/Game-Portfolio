@@ -3031,44 +3031,44 @@ function initEcosystem() {
   DRAGONS.length = 0;
 
   const dragonConfigs = [
-    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner high-speed orbit over Central Cyber-Chowk
+    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner high-sky circular orbit
     { id: 'obsidian', element: 'ice',
       bodyMesh: 'dragon_body_obsidian', headMesh: 'dragon_head_obsidian',
       tail1Mesh: 'dragon_tail1_obsidian', tail2Mesh: 'dragon_tail2_obsidian',
       wingL: 'dragonWingL_obsidian', wingR: 'dragonWingR_obsidian', mesh: 'dragon_obsidian',
-      cx: 0, cz: -25, rx: 90, rz: 105, orbitSpeed: 0.17, dir: 1, baseAlt: 78, altAmp: 8, altFreq: 0.36, phaseOffset: 0.0,
-      turnAgility: 2.2, bankFactor: 2.5, flapSpeedBase: 3.4, tailFreq: 4.4, scale: 22.0 },
-    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise orbit spanning Central Plaza to River Bridge
+      cx: 0, cz: -10, radius: 125, orbitSpeed: 0.16, dir: 1, baseAlt: 210, altAmp: 8, altFreq: 0.32, phaseOffset: 0.0,
+      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 36.0 },
+    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise circular orbit in high sky
     { id: 'volcanic', element: 'fire',
       bodyMesh: 'dragon_body_volcanic', headMesh: 'dragon_head_volcanic',
       tail1Mesh: 'dragon_tail1_volcanic', tail2Mesh: 'dragon_tail2_volcanic',
       wingL: 'dragonWingL_volcanic', wingR: 'dragonWingR_volcanic', mesh: 'dragon_volcanic',
-      cx: -20, cz: 35, rx: 135, rz: 155, orbitSpeed: 0.125, dir: -1, baseAlt: 96, altAmp: 9, altFreq: 0.28, phaseOffset: 1.8,
-      turnAgility: 1.5, bankFactor: 2.1, flapSpeedBase: 1.9, tailFreq: 2.4, scale: 24.5 },
-    // 3. Deep Sapphire Dark Blue Ice Dragon: River & Old City Sky Explorer (Emits DARK BLUE ICE breath) - sweeping wide clockwise orbit
+      cx: 0, cz: -10, radius: 165, orbitSpeed: 0.125, dir: -1, baseAlt: 235, altAmp: 9, altFreq: 0.28, phaseOffset: 1.8,
+      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 40.0 },
+    // 3. Deep Sapphire Dark Blue Ice Dragon: High Cloud Navigator (Emits DARK BLUE ICE breath) - wide clockwise circular orbit
     { id: 'jade', element: 'ice',
       bodyMesh: 'dragon_body_jade', headMesh: 'dragon_head_jade',
       tail1Mesh: 'dragon_tail1_jade', tail2Mesh: 'dragon_tail2_jade',
       wingL: 'dragonWingL_jade', wingR: 'dragonWingR_jade', mesh: 'dragon_jade',
-      cx: 15, cz: -10, rx: 175, rz: 190, orbitSpeed: 0.10, dir: 1, baseAlt: 116, altAmp: 11, altFreq: 0.22, phaseOffset: 3.6,
-      turnAgility: 1.8, bankFactor: 2.3, flapSpeedBase: 2.6, tailFreq: 3.6, scale: 24.0 },
-    // 4. Scarlet Red Fire Dragon: Sky Sovereign Apex (Emits RED FIRE breath) - panoramic celestial orbit over the entire Shatranj skyline
+      cx: 0, cz: -10, radius: 205, orbitSpeed: 0.10, dir: 1, baseAlt: 260, altAmp: 10, altFreq: 0.24, phaseOffset: 3.6,
+      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 42.0 },
+    // 4. Scarlet Red Fire Dragon: Celestial Sky Sovereign (Emits RED FIRE breath) - apex stratospheric circular orbit
     { id: 'gold', element: 'fire',
       bodyMesh: 'dragon_body_gold', headMesh: 'dragon_head_gold',
       tail1Mesh: 'dragon_tail1_gold', tail2Mesh: 'dragon_tail2_gold',
       wingL: 'dragonWingL_gold', wingR: 'dragonWingR_gold', mesh: 'dragon_gold',
-      cx: 0, cz: 0, rx: 215, rz: 230, orbitSpeed: 0.082, dir: -1, baseAlt: 138, altAmp: 12, altFreq: 0.18, phaseOffset: 5.2,
-      turnAgility: 1.6, bankFactor: 2.2, flapSpeedBase: 1.4, tailFreq: 2.2, scale: 27.0 }
+      cx: 0, cz: -10, radius: 245, orbitSpeed: 0.082, dir: -1, baseAlt: 285, altAmp: 11, altFreq: 0.20, phaseOffset: 5.2,
+      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 46.0 }
   ];
   for (const dc of dragonConfigs) {
     const initBreathT = dc.id === 'volcanic' ? 0.2 : dc.id === 'gold' ? 2.4 : dc.id === 'obsidian' ? 1.2 : 3.6;
     const a = dc.phaseOffset || 0;
-    const initX = dc.cx + dc.rx * Math.cos(a);
-    const initZ = dc.cz + dc.rz * Math.sin(a);
+    const initX = dc.cx + dc.radius * Math.cos(a);
+    const initZ = dc.cz + dc.radius * Math.sin(a);
     const initY = dc.baseAlt + Math.sin(a * dc.altFreq) * dc.altAmp;
-    const fwdX = -dc.rx * Math.sin(a) * dc.dir;
-    const fwdZ = dc.rz * Math.cos(a) * dc.dir;
-    const initYaw = Math.atan2(-fwdX, -fwdZ);
+    const vx = -Math.sin(a) * dc.dir;
+    const vz = Math.cos(a) * dc.dir;
+    const initYaw = Math.atan2(-vx, -vz);
     DRAGONS.push({
       ...dc,
       x: initX,
@@ -3080,7 +3080,7 @@ function initEcosystem() {
       breathT: initBreathT,
       yaw: initYaw,
       pitch: 0,
-      roll: dc.dir * 0.32,
+      roll: -dc.dir * 0.28,
       smoothFlap: 0,
       smoothPitch: 0,
       smoothSweep: 0,
@@ -3951,34 +3951,32 @@ function updateWorld(dt) {
     d.orbitAngle = (d.orbitAngle || d.phaseOffset || 0) + d.dir * d.orbitSpeed * dt;
     const a = d.orbitAngle;
 
-    // Continuous orbital trajectory in the sky over Shatranj City
-    const targetX = d.cx + d.rx * Math.cos(a);
-    const targetZ = d.cz + d.rz * Math.sin(a);
+    // Pure circular path roaming in the high sky over Shatranj City
+    const targetX = d.cx + d.radius * Math.cos(a);
+    const targetZ = d.cz + d.radius * Math.sin(a);
     const vertWave = Math.sin(t * d.altFreq + (d.phaseOffset || 0));
     const targetY = d.baseAlt + vertWave * d.altAmp;
 
-    // Smooth physical position tracking
-    d.x = damp(d.x, targetX, 10.0, dt);
-    d.y = damp(d.y, targetY, 6.0, dt);
-    d.z = damp(d.z, targetZ, 10.0, dt);
+    // Direct circular flight positioning high in the sky
+    d.x = targetX;
+    d.y = targetY;
+    d.z = targetZ;
 
-    // Tangent heading along the orbital path
-    const fwdX = -d.rx * Math.sin(a) * d.dir;
-    const fwdZ = d.rz * Math.cos(a) * d.dir;
-    const targetYaw = Math.atan2(-fwdX, -fwdZ);
+    // Exact forward velocity vector along the circular orbit
+    const vx = -Math.sin(a) * d.dir;
+    const vz = Math.cos(a) * d.dir;
 
-    // Smooth aerodynamic turn steering
-    const yawDiff = angDiff(d.yaw || 0, targetYaw);
-    d.yaw = (d.yaw || 0) + yawDiff * Math.min(1.0, (d.turnAgility || 1.6) * 4.2 * dt);
+    // Forward heading: points strictly forward along flight trajectory (head leading forward)
+    const forwardYaw = Math.atan2(-vx, -vz);
+    d.yaw = forwardYaw;
 
-    // Realistic aerodynamic banking roll into the turn
-    const bankInward = d.dir * 0.32;
-    const dynamicBank = clamp(-yawDiff * (d.bankFactor || 2.2), -0.65, 0.65);
-    d.roll = damp(d.roll || 0, bankInward + dynamicBank, 4.0, dt);
+    // Natural aerodynamic banking: leaning inward into the circular turn
+    const targetRoll = -d.dir * 0.28;
+    d.roll = damp(d.roll || 0, targetRoll, 4.0, dt);
 
-    // Vertical pitch following undulating climb / dive
+    // Aerodynamic vertical pitch matching undulating climb / dive
     const vertRate = Math.cos(t * d.altFreq + (d.phaseOffset || 0)) * d.altAmp * d.altFreq;
-    const targetBodyPitch = clamp(-vertRate * 0.12, -0.32, 0.32);
+    const targetBodyPitch = clamp(-vertRate * 0.08, -0.22, 0.22);
     d.pitch = damp(d.pitch || 0, targetBodyPitch, 3.5, dt);
 
     // Unique continuous glide & flap personality (agile scout vs heavy wyrm vs river serpent vs soaring sovereign)
@@ -4048,7 +4046,7 @@ function updateWorld(dt) {
       if (d.element === 'fire') {
         // FIRE DRAGON BREATH (Both Dragons are radiant blazing RED)
         for (let k = 0; k < 2; k++) {
-          const spd = 34 + Math.random() * 18 * bInt;
+          const spd = 48 + Math.random() * 24 * bInt;
           const spread = (Math.random() - 0.5) * 4.5;
           const spreadY = (Math.random() - 0.5) * 3.5;
           const vx = fwdDir[0] * spd + spread;
@@ -4061,9 +4059,9 @@ function updateWorld(dt) {
             FX.add.emit({
               pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
               vel: [vx, vy, vz],
-              life: 1.35 + Math.random() * 0.45,
-              size: 1.2 * d.scale * 0.35,
-              grow: 5.8 * d.scale * 0.35,
+              life: 1.55 + Math.random() * 0.45,
+              size: 1.6 * d.scale * 0.35,
+              grow: 7.5 * d.scale * 0.35,
               drag: 1.08,
               g: -1.2,
               col: col
@@ -4073,8 +4071,8 @@ function updateWorld(dt) {
               FX.add.emit({
                 pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
                 vel: [vx * 1.15, vy * 1.15, vz * 1.15],
-                life: 0.85 + Math.random() * 0.35,
-                size: 0.75, grow: 1.8, drag: 1.05,
+                life: 0.95 + Math.random() * 0.35,
+                size: 1.0, grow: 2.4, drag: 1.05,
                 col: [1.0, 0.45 + Math.random() * 0.35, 0.20, 1.0]
               });
             }
@@ -4084,8 +4082,8 @@ function updateWorld(dt) {
             FX.alpha.emit({
               pos: [mouthPos[0] + (Math.random() - 0.5) * 2.0, mouthPos[1], mouthPos[2] + (Math.random() - 0.5) * 2.0],
               vel: [vx * 0.75, vy * 0.75 + 1.8, vz * 0.75],
-              life: 1.6 + Math.random() * 0.5,
-              size: 1.5, grow: 6.2, drag: 1.10, g: -1.8,
+              life: 1.8 + Math.random() * 0.5,
+              size: 2.2, grow: 8.5, drag: 1.10, g: -1.8,
               col: [0.36, 0.06, 0.06, 0.48 * bInt]
             });
           }
@@ -4093,7 +4091,7 @@ function updateWorld(dt) {
       } else if (d.element === 'ice') {
         // ICE DRAGON BREATH (Dark Blue Glacial Frost Wyrms)
         for (let k = 0; k < 2; k++) {
-          const spd = 30 + Math.random() * 16 * bInt;
+          const spd = 44 + Math.random() * 22 * bInt;
           const swirlA = d.breathT * 12 + Math.random() * 6.28;
           const swirlR = 2.4;
           const vx = fwdDir[0] * spd + Math.cos(swirlA) * swirlR;
@@ -4106,9 +4104,9 @@ function updateWorld(dt) {
             FX.add.emit({
               pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
               vel: [vx, vy, vz],
-              life: 1.40 + Math.random() * 0.45,
-              size: 1.1 * d.scale * 0.35,
-              grow: 5.2 * d.scale * 0.35,
+              life: 1.55 + Math.random() * 0.45,
+              size: 1.5 * d.scale * 0.35,
+              grow: 6.8 * d.scale * 0.35,
               drag: 1.06,
               g: 1.5,
               col: col
