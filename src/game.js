@@ -554,12 +554,10 @@ function routeTo(tx, tz) {
 async function initGame(canvas, onProgress, fontLoads) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { preserveDrawingBuffer: true },
-    { antialias: false, alpha: false, preserveDrawingBuffer: true }
+    { powerPreference: 'high-performance', antialias: false, alpha: false, depth: true, stencil: false, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', failIfMajorPerformanceCaveat: false },
+    { antialias: false, alpha: false }
   ];
   for (const cfg of glConfigs) {
     try {
@@ -664,7 +662,10 @@ function resize() {
 function labelCanvas(lm) { return textCanvas(1024, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `600 150px ${FONT_D}`; x.lineWidth = 16; x.strokeStyle = 'rgba(10,14,30,0.75)'; x.strokeText(lm.name.toUpperCase(), w / 2, h / 2 + 18); x.fillStyle = '#ffffff'; x.fillText(lm.name.toUpperCase(), w / 2, h / 2 + 18); x.fillStyle = lm.color; x.fillRect(w / 2 - 120, h - 30, 240, 10); }); }
 async function holoCanvas(cs, i) {
   const cover = cs.cover ? await loadCaseStudyCover(cs.cover) : null;
-  return textCanvas(1024, 2048, (x, w, h) => {
+  return textCanvas(512, 1024, (x) => {
+    x.save();
+    x.scale(0.5, 0.5);
+    const w = 1024, h = 2048;
     // 1. Deep midnight glass obsidian background
     x.fillStyle = '#050914';
     x.fillRect(0, 0, w, h);
@@ -907,17 +908,16 @@ async function holoCanvas(cs, i) {
 
     x.fillStyle = '#94A3B8'; x.font = `700 24px ${FONT_D}`; x.textAlign = 'center';
     x.fillText('SHATRANJ CITY · CYBER-CHOWK INTERCHANGE · CASE STUDY 0' + (i + 1) + ' OF 03', w / 2, 2012);
+    x.restore();
   });
 }
 function loadCaseStudyCover(path) {
   return new Promise((resolve) => {
     if (!path) { resolve(null); return; }
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => {
-      console.warn('Cover image at ' + path + ' could not be loaded, using stylized fallback.');
-      resolve(null);
-    };
+    const timer = setTimeout(() => resolve(null), 100);
+    image.onload = () => { clearTimeout(timer); resolve(image); };
+    image.onerror = () => { clearTimeout(timer); resolve(null); };
     try {
       if (path.startsWith('data:')) {
         image.src = path;
@@ -925,12 +925,16 @@ function loadCaseStudyCover(path) {
         image.src = new URL(path, document.baseURI).href;
       }
     } catch {
+      clearTimeout(timer);
       resolve(null);
     }
   });
 }
 function holoBackCanvas() {
-  return textCanvas(1024, 2048, (x, w, h) => {
+  return textCanvas(512, 1024, (x) => {
+    x.save();
+    x.scale(0.5, 0.5);
+    const w = 1024, h = 2048;
     // Solid dark titanium armor chassis
     x.fillStyle = '#060a14';
     x.fillRect(0, 0, w, h);
@@ -998,6 +1002,7 @@ function holoBackCanvas() {
     x.fillText('FIBER BACKHAUL · ULTRA-HD FEED ACTIVE', w / 2, h - 138);
     x.fillStyle = '#38BDF8'; x.font = `700 22px ${FONT_D}`;
     x.fillText('60 FPS // 4K REFRESH // DRIVE TO FRONT TO INTERACT', w / 2, h - 106);
+    x.restore();
   });
 }
 function wrap(x, text, px, py, maxW, lh, maxL) { const words = String(text).split(' '); let line = '', n = 0; for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (x.measureText(t).width > maxW && line) { x.fillText(line, px, py); py += lh; line = wd; if (++n >= maxL) return; } else line = t; } if (line) x.fillText(line, px, py); }

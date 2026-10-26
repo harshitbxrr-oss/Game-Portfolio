@@ -120,7 +120,7 @@ function dismissLoader(onDone) {
     ld.classList.add('hidden');
     ld.classList.remove('fading');
     if (onDone) onDone();
-  }, 480);
+  }, 220);
 }
 
 function returnToRoad() {
@@ -194,15 +194,25 @@ async function boot() {
   GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
   applySettingsUI();
   try {
-    const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();
-    setProgress(0.12, 'Loading the city');
+    const fontLoads = document.fonts ? Promise.race([
+      Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter')]),
+      new Promise(r => setTimeout(r, 60))
+    ]).catch(() => {}) : Promise.resolve();
+    setProgress(0.2, 'Loading the city');
     await initGame($('#gl'), setProgress, fontLoads);
     buildMinimapBase(); startLoop(); booted = true;
-    setProgress(1, 'Ready when you are');
+    setProgress(1, 'Ready');
     if (shouldReturnToRoad) {
       returnToRoad();
     } else {
-      $('#btnStart').disabled = false; $('#ldStatus').textContent = 'Ready when you are'; $('#btnStart').focus();
+      $('#btnStart').disabled = false;
+      $('#ldStatus').textContent = 'Starting...';
+      // Auto-enter immediately so the player never waits on the loading screen!
+      setTimeout(() => {
+        if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+          $('#btnStart').click();
+        }
+      }, 100);
     }
     $('#gl').addEventListener('webglcontextlost', e => { e.preventDefault(); openQuick(true); });
   } catch (err) {
@@ -217,8 +227,14 @@ async function boot() {
     setTimeout(() => openQuick(true), 900);
   }
 }
-$('#btnStart').onclick = () => { if (!booted) return; if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); dismissLoader(() => { resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } }); };
+$('#btnStart').onclick = () => { if (!booted) return; if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); dismissLoader(() => { resize(); GAME.beginIntro(); }); };
 $('#btnQuick2').onclick = () => openQuick(!booted);
+$('#loader').addEventListener('click', (e) => {
+  if (e.target.closest('#btnQuick2')) return;
+  if (booted && !$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+    $('#btnStart').click();
+  }
+});
 
 // ---------- tour ----------
 const TOUR_CAPS = [['Ancient Temple Complex', 'प्राचीन मंदिर परिसर'], ['Old City', 'पुराना शहर'], ['Victoria Bridge', 'विक्टोरिया पुल'], ['Modern Business District', 'व्यापार केंद्र']];
@@ -302,7 +318,7 @@ function buildSpeedo() {
     <g id="nitro" transform="translate(${cx - 44} ${cy - 44})"><path d="M8 2h8l-2 6h5l-9 12 2-8H7z" fill="#3B8FD8"/></g>
     <text id="boostPct" x="${cx - 20}" y="${cy - 29}" font-family="Rajdhani, sans-serif" font-weight="700" font-size="14" fill="#9fd0ff">100</text>`;
 }
-let mmBase, mapScale = 2; const MMR = 330;
+let mmBase, mapScale = 1.0; const MMR = 330;
 function buildMinimapBase() {
   mmBase = document.createElement('canvas'); mmBase.width = mmBase.height = MMR * 2 * mapScale; const x = mmBase.getContext('2d'); x.scale(mapScale, mapScale); x.translate(MMR, MMR);
   x.fillStyle = 'rgba(30,36,52,0.55)'; x.fillRect(-MMR, -MMR, MMR * 2, MMR * 2);
