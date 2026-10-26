@@ -66,6 +66,27 @@ const PORTFOLIO = {
   ],
   caseStudies: [
     {
+      title: 'WallVista',
+      summary: 'Visualise wall designs in your space, compare verified pros and book with confidence.',
+      role: 'Product Designer (Solo UX/UI)',
+      duration: '8 weeks',
+      cover: 'case-studies/wallvista/wallvista-cover.png',
+      coverAlt: 'WallVista 3D wall-design preview in a living room',
+      problem: 'Visualisation, pricing, professional discovery and booking live in different places. Homeowners are left to connect the dots and take all the risk before knowing what it will actually look like or cost.',
+      process: [
+        'Researched 3 behavioural personas (The Curator, First-Timer, Renter) to address confidence gaps',
+        'Mapped the 5-stage homeowner flow: Discover → Visualise → Compare → Book → Complete',
+        'Designed 13 interactive moments transitioning from wireframes to high-fidelity mobile UI',
+        'Defined AI-assisted wall analysis, AR/3D design preview, transparent quotes and protected booking'
+      ],
+      outcome: [
+        'Visualisation-first architecture: start with the room before matching with pros, eliminating commitment anxiety',
+        'Transparent marketplace: clear cost breakdowns, verified ratings and milestone-based protected payment'
+      ],
+      accent: '#6366F1',
+      link: 'case-studies/wallvista/index.html?from=game'
+    },
+    {
       title: 'Home Tutor Pro',
       summary: 'Home tutor discovery platform focused on helping learners and families discover suitable home tutors.',
       role: 'UI/UX Designer',
