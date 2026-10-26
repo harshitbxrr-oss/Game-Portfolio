@@ -1,17 +1,17 @@
 const screens = [
-  ["01", "Home", "01Home.png", "01 Home — Wireframe.png"],
-  ["02", "Upload wall", "02 Upload.png", "02 Upload — Wireframe.png"],
-  ["03", "AI analysis", "03 Analysis.png", "03 Analysis — Wireframe.png"],
-  ["04", "AI suggestions", "04 Suggestions.png", "04 Suggestions — Wireframe.png"],
-  ["05", "Design preview", "05 Priview.png", "05 Preview — Wireframe.png"],
-  ["06", "Find a pro", "06 Find pro.png", "06 Find pro — Wireframe.png"],
-  ["07", "Compare quotes", "07 Compare.png", "07 Compare — Wireframe.png"],
-  ["08", "Choose a date", "08 Choose date.png", "08 Choose date — Wireframe.png"],
-  ["09", "Review & book", "09 Review and Book.png", "09 Review and Book — Wireframe.png"],
-  ["10", "Booking confirmed", "10 Booking Confirmed.png", "10 Booking Confirmed — Wireframe.png"],
-  ["11", "Your project", "11 Your Project.png", "11 Your Project — Wireframe.png"],
-  ["12", "Profile", "12 Profile.png", "12 Profile — Wireframe.png"],
-  ["13", "Settings", "13 Settings.png", "13 Settings — Wireframe.png"]
+  ["01", "Home", "01Home.png", "01 Home - Wireframe.png"],
+  ["02", "Upload wall", "02 Upload.png", "02 Upload - Wireframe.png"],
+  ["03", "AI analysis", "03 Analysis.png", "03 Analysis - Wireframe.png"],
+  ["04", "AI suggestions", "04 Suggestions.png", "04 Suggestions - Wireframe.png"],
+  ["05", "Design preview", "05 Priview.png", "05 Preview - Wireframe.png"],
+  ["06", "Find a pro", "06 Find pro.png", "06 Find pro - Wireframe.png"],
+  ["07", "Compare quotes", "07 Compare.png", "07 Compare - Wireframe.png"],
+  ["08", "Choose a date", "08 Choose date.png", "08 Choose date - Wireframe.png"],
+  ["09", "Review & book", "09 Review and Book.png", "09 Review and Book - Wireframe.png"],
+  ["10", "Booking confirmed", "10 Booking Confirmed.png", "10 Booking Confirmed - Wireframe.png"],
+  ["11", "Your project", "11 Your Project.png", "11 Your Project - Wireframe.png"],
+  ["12", "Profile", "12 Profile.png", "12 Profile - Wireframe.png"],
+  ["13", "Settings", "13 Settings.png", "13 Settings - Wireframe.png"]
 ];
 
 const grid = document.querySelector("#screen-grid");
@@ -72,7 +72,7 @@ function updateDialog() {
   const modeLabel = galleryMode === "wireframes" ? "Wireframe" : "Designed screen";
   dialogImage.src = imagePath(selectedScreen);
   dialogImage.alt = `${modeLabel}: ${title}`;
-  dialogTitle.textContent = `${number} / ${String(screens.length).padStart(2, "0")}  ·  ${title} — ${modeLabel}`;
+  dialogTitle.textContent = `${number} / ${String(screens.length).padStart(2, "0")} · ${title} — ${modeLabel}`;
   dialogCounter.textContent = `${number} / ${String(screens.length).padStart(2, "0")}`;
   dialog.querySelector(".dialog-prev").disabled = selectedScreen === 0;
   dialog.querySelector(".dialog-next").disabled = selectedScreen === screens.length - 1;
