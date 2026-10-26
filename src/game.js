@@ -583,12 +583,12 @@ function routeTo(tx, tz) {
 async function initGame(canvas, onProgress) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', failIfMajorPerformanceCaveat: false },
-    { failIfMajorPerformanceCaveat: false },
-    { antialias: false, alpha: false, preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: false },
-    {},
-    { antialias: false, alpha: false }
+    { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { preserveDrawingBuffer: true },
+    { antialias: false, alpha: false, preserveDrawingBuffer: true }
   ];
   for (const cfg of glConfigs) {
     try {

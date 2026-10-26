@@ -11,7 +11,12 @@
 <meta property="og:title" content="Shatranj City — Harshit Kumar Sinha, UI/UX Designer">
 <meta property="og:description" content="Drive the VAJRA-S1 through Shatranj City to explore the portfolio of Harshit Kumar Sinha, UI/UX designer.">
 <meta property="og:image" content="assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Shatranj City — Harshit Kumar Sinha, UI/UX Designer">
+<meta name="twitter:description" content="Drive the VAJRA-S1 through Shatranj City to explore the portfolio of Harshit Kumar Sinha, UI/UX designer.">
+<meta name="twitter:image" content="assets/og-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rajdhani:wght@500;600;700&family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -3047,12 +3052,12 @@ function routeTo(tx, tz) {
 async function initGame(canvas, onProgress) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', failIfMajorPerformanceCaveat: false },
-    { failIfMajorPerformanceCaveat: false },
-    { antialias: false, alpha: false, preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: false },
-    {},
-    { antialias: false, alpha: false }
+    { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { preserveDrawingBuffer: true },
+    { antialias: false, alpha: false, preserveDrawingBuffer: true }
   ];
   for (const cfg of glConfigs) {
     try {
