@@ -752,7 +752,12 @@ function buildWorld(rng) {
   addSign(neonSign('वज्र सेतु', { color: '#FFD27A', frame: '#FF9F43', bg: '#1a1208', hindi: true }), 150, 50, 18.9, 0, 14, 3.5, 1.4);
 
   // ---------- distant skyline ----------
-  for (let i = 0; i < 90; i++) { const a = i / 90 * 6.2832 + rng() * 0.05, r = 440 + rng() * 220, x = Math.cos(a) * r, z = Math.sin(a) * r, w = 18 + rng() * 26, h = (z > 150 && x > 0 ? 50 : 18) + rng() * (z > 150 && x > 0 ? 90 : 45); G.block(x - w / 2, z - w / 2, x + w / 2, z + w / 2, 0, h, V3.lerp(hex('#8b93a0'), hex('#b8a88e'), rng()), 8); }
+  for (let i = 0; i < 90; i++) {
+    const a = i / 90 * 6.2832 + rng() * 0.05, r = 490 + rng() * 220, x = Math.cos(a) * r, z = Math.sin(a) * r, w = 18 + rng() * 26, h = (z > 150 && x > 0 ? 50 : 18) + rng() * (z > 150 && x > 0 ? 90 : 45);
+    if (Math.abs(x) < 336 + w / 2 && Math.abs(z) < 336 + w / 2) continue;
+    if (hitsRoad(x, z, w / 2 + 6)) continue;
+    G.block(x - w / 2, z - w / 2, x + w / 2, z + w / 2, 0, h, V3.lerp(hex('#8b93a0'), hex('#b8a88e'), rng()), 8);
+  }
 
   // ---------- traffic loops (left-hand traffic) ----------
   const loop = (pts, closed = true) => W.traffic.push({ pts, closed });
