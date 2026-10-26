@@ -478,85 +478,56 @@ function initEcosystem() {
   DRAGONS.length = 0;
 
   const dragonConfigs = [
-    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - fast agile diagonal Figure-8 interceptor
+    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner high-speed orbit over Central Cyber-Chowk
     { id: 'obsidian', element: 'ice',
       bodyMesh: 'dragon_body_obsidian', headMesh: 'dragon_head_obsidian',
       tail1Mesh: 'dragon_tail1_obsidian', tail2Mesh: 'dragon_tail2_obsidian',
       wingL: 'dragonWingL_obsidian', wingR: 'dragonWingR_obsidian', mesh: 'dragon_obsidian',
-      x: -40, y: 385, z: 80, cruiseSpeed: 55, turnAgility: 1.8, bankFactor: 3.2, flapSpeedBase: 3.8, tailFreq: 4.8, scale: 19.5, wpIdx: 0,
-      waypoints: [
-        { x: -290, z: -280, alt: 385, desc: 'Northwest Bastion High Stratosphere' },
-        { x: -70, z: -90, alt: 375, desc: 'Old City Diagonal Cross' },
-        { x: 140, z: 50, alt: 390, desc: 'Bridge High Crossing' },
-        { x: 290, z: 270, alt: 410, desc: 'Southeast Delta Outer High' },
-        { x: 270, z: -80, alt: 395, desc: 'East Galleria High Sky' },
-        { x: 70, z: 230, alt: 380, desc: 'South Promenade Stratosphere' },
-        { x: -190, z: 220, alt: 390, desc: 'Southwest Market High' },
-        { x: -290, z: 50, alt: 405, desc: 'West Ridge High Sky' }
-      ] },
-    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - massive outer mountain perimeter orbit
+      cx: 0, cz: -25, rx: 90, rz: 105, orbitSpeed: 0.17, dir: 1, baseAlt: 78, altAmp: 8, altFreq: 0.36, phaseOffset: 0.0,
+      turnAgility: 2.2, bankFactor: 2.5, flapSpeedBase: 3.4, tailFreq: 4.4, scale: 22.0 },
+    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise orbit spanning Central Plaza to River Bridge
     { id: 'volcanic', element: 'fire',
       bodyMesh: 'dragon_body_volcanic', headMesh: 'dragon_head_volcanic',
       tail1Mesh: 'dragon_tail1_volcanic', tail2Mesh: 'dragon_tail2_volcanic',
       wingL: 'dragonWingL_volcanic', wingR: 'dragonWingR_volcanic', mesh: 'dragon_volcanic',
-      x: 60, y: 415, z: 20, cruiseSpeed: 34, turnAgility: 0.95, bankFactor: 1.4, flapSpeedBase: 1.6, tailFreq: 2.2, scale: 21.0, wpIdx: 0,
-      waypoints: [
-        { x: 330, z: -300, alt: 420, desc: 'Northeast Outer Mountain Ridge' },
-        { x: 90, z: -330, alt: 435, desc: 'North Citadel Far Horizon' },
-        { x: -260, z: -270, alt: 415, desc: 'Northwest Cloudfront Perimeter' },
-        { x: -330, z: 80, alt: 405, desc: 'West Mountain Divide' },
-        { x: -200, z: 310, alt: 430, desc: 'Southwest Horizon Ridge' },
-        { x: 110, z: 320, alt: 425, desc: 'South Boundary High Sky' },
-        { x: 320, z: 140, alt: 440, desc: 'East Sky Horizon' },
-        { x: 230, z: -140, alt: 430, desc: 'Cyber-East Ridge' }
-      ] },
-    // 3. Deep Sapphire Dark Blue Ice Dragon: River & Canyon Explorer (Emits DARK BLUE ICE breath) - sinuous S-curve canyon & cloud traverse
+      cx: -20, cz: 35, rx: 135, rz: 155, orbitSpeed: 0.125, dir: -1, baseAlt: 96, altAmp: 9, altFreq: 0.28, phaseOffset: 1.8,
+      turnAgility: 1.5, bankFactor: 2.1, flapSpeedBase: 1.9, tailFreq: 2.4, scale: 24.5 },
+    // 3. Deep Sapphire Dark Blue Ice Dragon: River & Old City Sky Explorer (Emits DARK BLUE ICE breath) - sweeping wide clockwise orbit
     { id: 'jade', element: 'ice',
       bodyMesh: 'dragon_body_jade', headMesh: 'dragon_head_jade',
       tail1Mesh: 'dragon_tail1_jade', tail2Mesh: 'dragon_tail2_jade',
       wingL: 'dragonWingL_jade', wingR: 'dragonWingR_jade', mesh: 'dragon_jade',
-      x: -80, y: 395, z: -50, cruiseSpeed: 42, turnAgility: 1.45, bankFactor: 2.3, flapSpeedBase: 2.6, tailFreq: 3.8, scale: 20.0, wpIdx: 0,
-      waypoints: [
-        { x: -340, z: 140, alt: 395, desc: 'Far West River Delta' },
-        { x: -160, z: 40, alt: 385, desc: 'West River Rapids Sky' },
-        { x: 10, z: 20, alt: 390, desc: 'Vajra Setu High Stratosphere' },
-        { x: 210, z: 30, alt: 405, desc: 'East River Canyon High' },
-        { x: 340, z: 200, alt: 425, desc: 'Far East River Delta' },
-        { x: 210, z: -240, alt: 415, desc: 'North Approach Ridge' },
-        { x: -120, z: -290, alt: 400, desc: 'Old City High Crest' },
-        { x: -310, z: -110, alt: 390, desc: 'West Ridge Sky Pass' }
-      ] },
-    // 4. Scarlet Red Fire Dragon: Sky Sovereign (Emits RED FIRE breath) - apex stratospheric 4-leaf cloverleaf / rosette orbit
+      cx: 15, cz: -10, rx: 175, rz: 190, orbitSpeed: 0.10, dir: 1, baseAlt: 116, altAmp: 11, altFreq: 0.22, phaseOffset: 3.6,
+      turnAgility: 1.8, bankFactor: 2.3, flapSpeedBase: 2.6, tailFreq: 3.6, scale: 24.0 },
+    // 4. Scarlet Red Fire Dragon: Sky Sovereign Apex (Emits RED FIRE breath) - panoramic celestial orbit over the entire Shatranj skyline
     { id: 'gold', element: 'fire',
       bodyMesh: 'dragon_body_gold', headMesh: 'dragon_head_gold',
       tail1Mesh: 'dragon_tail1_gold', tail2Mesh: 'dragon_tail2_gold',
       wingL: 'dragonWingL_gold', wingR: 'dragonWingR_gold', mesh: 'dragon_gold',
-      x: 40, y: 465, z: -100, cruiseSpeed: 46, turnAgility: 1.15, bankFactor: 1.9, flapSpeedBase: 1.3, tailFreq: 2.4, scale: 23.0, wpIdx: 0,
-      waypoints: [
-        { x: 0, z: -330, alt: 480, desc: 'Apex North Sky Leaf' },
-        { x: 310, z: -190, alt: 465, desc: 'Apex Northeast Sky' },
-        { x: 340, z: 90, alt: 475, desc: 'Apex East Sky Leaf' },
-        { x: 240, z: 320, alt: 460, desc: 'Apex Southeast Sky' },
-        { x: -90, z: 330, alt: 470, desc: 'Apex South Sky Leaf' },
-        { x: -330, z: 180, alt: 485, desc: 'Apex Southwest Sky' },
-        { x: -340, z: -160, alt: 475, desc: 'Apex Northwest Sky Leaf' },
-        { x: 0, z: 0, alt: 495, desc: 'Supreme Celestial Zenith' }
-      ] }
+      cx: 0, cz: 0, rx: 215, rz: 230, orbitSpeed: 0.082, dir: -1, baseAlt: 138, altAmp: 12, altFreq: 0.18, phaseOffset: 5.2,
+      turnAgility: 1.6, bankFactor: 2.2, flapSpeedBase: 1.4, tailFreq: 2.2, scale: 27.0 }
   ];
   for (const dc of dragonConfigs) {
     const initBreathT = dc.id === 'volcanic' ? 0.2 : dc.id === 'gold' ? 2.4 : dc.id === 'obsidian' ? 1.2 : 3.6;
-    const pts = dc.waypoints || DRAGON_ROAM_POINTS;
-    const wp = pts[dc.wpIdx % pts.length];
-    const initYaw = Math.atan2(-(wp.x - dc.x), -(wp.z - dc.z));
+    const a = dc.phaseOffset || 0;
+    const initX = dc.cx + dc.rx * Math.cos(a);
+    const initZ = dc.cz + dc.rz * Math.sin(a);
+    const initY = dc.baseAlt + Math.sin(a * dc.altFreq) * dc.altAmp;
+    const fwdX = -dc.rx * Math.sin(a) * dc.dir;
+    const fwdZ = dc.rz * Math.cos(a) * dc.dir;
+    const initYaw = Math.atan2(-fwdX, -fwdZ);
     DRAGONS.push({
       ...dc,
+      x: initX,
+      y: initY,
+      z: initZ,
+      orbitAngle: a,
       wingPh: Math.random() * 6.28,
       flightT: Math.random() * 200,
       breathT: initBreathT,
-      wpTimer: 12 + Math.random() * 6,
       yaw: initYaw,
       pitch: 0,
-      roll: 0,
+      roll: dc.dir * 0.32,
       smoothFlap: 0,
       smoothPitch: 0,
       smoothSweep: 0,
@@ -1418,56 +1389,44 @@ function updateWorld(dt) {
     b.y = (b.baseY || 35) + Math.sin(b.waveT + (b.wavePh || 0)) * (b.waveAmp || 1.8);
   }
 
-  // Update 4 majestic flying dragons with dynamic roaming AI ("here and there" across Shatranj City)
+  // Update 4 majestic flying dragons rotating continuously in the sky of Shatranj City
   for (const d of DRAGONS) {
     d.flightT = (d.flightT || 0) + dt;
     const t = d.flightT;
 
-    // Dynamic city-wide continuous roaming waypoint flight AI
-    const pts = d.waypoints || DRAGON_ROAM_POINTS;
-    const curWp = pts[d.wpIdx % pts.length];
-    const dx = curWp.x - d.x;
-    const dz = curWp.z - d.z;
-    const dy = curWp.alt - d.y;
-    const distHoriz = Math.hypot(dx, dz);
+    // Advance orbital rotation angle around Shatranj City sky
+    d.orbitAngle = (d.orbitAngle || d.phaseOffset || 0) + d.dir * d.orbitSpeed * dt;
+    const a = d.orbitAngle;
 
-    d.wpTimer = (d.wpTimer || 16) - dt;
-    // When arriving near waypoint or after duration, advance continuously to the next waypoint
-    if (distHoriz < 45 || d.wpTimer <= 0) {
-      d.wpIdx = (d.wpIdx + 1) % pts.length;
-      d.wpTimer = 16 + Math.random() * 8;
-    }
+    // Continuous orbital trajectory in the sky over Shatranj City
+    const targetX = d.cx + d.rx * Math.cos(a);
+    const targetZ = d.cz + d.rz * Math.sin(a);
+    const vertWave = Math.sin(t * d.altFreq + (d.phaseOffset || 0));
+    const targetY = d.baseAlt + vertWave * d.altAmp;
 
-    // Desired heading to target
-    let desiredYaw = Math.atan2(-dx, -dz);
-    // Soft map boundary rebound (steers back inward if ever past outer horizon)
-    if (Math.hypot(d.x, d.z) > 420) {
-      desiredYaw = Math.atan2(-d.x, -d.z);
-    }
+    // Smooth physical position tracking
+    d.x = damp(d.x, targetX, 10.0, dt);
+    d.y = damp(d.y, targetY, 6.0, dt);
+    d.z = damp(d.z, targetZ, 10.0, dt);
 
-    // Smooth aerodynamic turn steering tailored to each dragon's agility
-    const yawDiff = angDiff(d.yaw || 0, desiredYaw);
-    const maxTurnRate = (d.turnAgility || 1.25) * dt;
-    d.yaw = (d.yaw || 0) + clamp(yawDiff, -maxTurnRate, maxTurnRate);
+    // Tangent heading along the orbital path
+    const fwdX = -d.rx * Math.sin(a) * d.dir;
+    const fwdZ = d.rz * Math.cos(a) * d.dir;
+    const targetYaw = Math.atan2(-fwdX, -fwdZ);
 
-    // Unique banking physics for each dragon's weight and wingspan
-    const targetRoll = clamp(-yawDiff * (d.bankFactor || 2.2), -0.78, 0.78);
-    d.roll = damp(d.roll || 0, targetRoll, 3.8, dt);
+    // Smooth aerodynamic turn steering
+    const yawDiff = angDiff(d.yaw || 0, targetYaw);
+    d.yaw = (d.yaw || 0) + yawDiff * Math.min(1.0, (d.turnAgility || 1.6) * 4.2 * dt);
 
-    // Dynamic pitch tracking target altitude with vertical climbing & diving
-    const desiredPitch = clamp(-dy / Math.max(30, distHoriz) * 1.0, -0.42, 0.42);
-    d.pitch = damp(d.pitch || 0, desiredPitch, 2.4, dt);
+    // Realistic aerodynamic banking roll into the turn
+    const bankInward = d.dir * 0.32;
+    const dynamicBank = clamp(-yawDiff * (d.bankFactor || 2.2), -0.65, 0.65);
+    d.roll = damp(d.roll || 0, bankInward + dynamicBank, 4.0, dt);
 
-    // Physical forward motion along 3D velocity vector
-    const speed = d.cruiseSpeed || 36;
-    const horizSpeed = speed * Math.cos(d.pitch);
-    const vx = -Math.sin(d.yaw) * horizSpeed;
-    const vz = -Math.cos(d.yaw) * horizSpeed;
-    const vy = -Math.sin(d.pitch) * speed;
-
-    d.x += vx * dt;
-    d.y += vy * dt;
-    d.z += vz * dt;
+    // Vertical pitch following undulating climb / dive
+    const vertRate = Math.cos(t * d.altFreq + (d.phaseOffset || 0)) * d.altAmp * d.altFreq;
+    const targetBodyPitch = clamp(-vertRate * 0.12, -0.32, 0.32);
+    d.pitch = damp(d.pitch || 0, targetBodyPitch, 3.5, dt);
 
     // Unique continuous glide & flap personality (agile scout vs heavy wyrm vs river serpent vs soaring sovereign)
     const cycle = d.id === 'gold' ? Math.sin(t * 0.28) : Math.sin(t * 0.45 + (d.id === 'volcanic' ? 1.6 : d.id === 'jade' ? 3.2 : 0));
@@ -1700,9 +1659,9 @@ function updateWorld(dt) {
 const CAMFX = { tour: null, orbit: null, hero: null };
 // camera rigs: chase distances, heights and look-ahead per mode
 const CAM_MODES = {
-  chase: { name: 'Chase', dist: 6.6, h: 1.95, look: 5, lookY: 0.95, lag: 0.15, fov: 0 },
-  close: { name: 'Close chase', dist: 4.7, h: 1.35, look: 6, lookY: 0.85, lag: 0.13, fov: 4 },
-  far: { name: 'Far chase', dist: 10.5, h: 3.6, look: 4, lookY: 0.9, lag: 0.22, fov: -2 },
+  chase: { name: 'Chase', dist: 6.6, h: 1.95, look: 5, lookY: 1.35, lag: 0.15, fov: 0 },
+  close: { name: 'Close chase', dist: 4.7, h: 1.35, look: 6, lookY: 1.15, lag: 0.13, fov: 4 },
+  far: { name: 'Far chase', dist: 10.5, h: 3.6, look: 4, lookY: 1.25, lag: 0.22, fov: -2 },
   hood: { name: 'Hood', hood: true, fov: 12 },
   drone: { name: 'Top-down', dist: 15, h: 24, look: 3, lookY: 0, lag: 0.32, fov: -6 }
 };
