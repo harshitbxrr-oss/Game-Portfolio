@@ -483,29 +483,29 @@ function initEcosystem() {
       bodyMesh: 'dragon_body_obsidian', headMesh: 'dragon_head_obsidian',
       tail1Mesh: 'dragon_tail1_obsidian', tail2Mesh: 'dragon_tail2_obsidian',
       wingL: 'dragonWingL_obsidian', wingR: 'dragonWingR_obsidian', mesh: 'dragon_obsidian',
-      cx: 0, cz: -10, radius: 110, orbitSpeed: 0.16, dir: 1, baseAlt: 62, altAmp: 6, altFreq: 0.32, phaseOffset: 0.0,
-      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 6.5 },
+      cx: 0, cz: -10, radius: 95, orbitSpeed: 0.16, dir: 1, baseAlt: 48, altAmp: 4, altFreq: 0.32, phaseOffset: 0.0,
+      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 3.5 },
     // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise circular orbit in sky
     { id: 'volcanic', element: 'fire',
       bodyMesh: 'dragon_body_volcanic', headMesh: 'dragon_head_volcanic',
       tail1Mesh: 'dragon_tail1_volcanic', tail2Mesh: 'dragon_tail2_volcanic',
       wingL: 'dragonWingL_volcanic', wingR: 'dragonWingR_volcanic', mesh: 'dragon_volcanic',
-      cx: 0, cz: -10, radius: 145, orbitSpeed: 0.125, dir: -1, baseAlt: 74, altAmp: 7, altFreq: 0.28, phaseOffset: 1.8,
-      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 7.5 },
+      cx: 0, cz: -10, radius: 125, orbitSpeed: 0.125, dir: -1, baseAlt: 56, altAmp: 5, altFreq: 0.28, phaseOffset: 1.8,
+      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 4.0 },
     // 3. Deep Sapphire Dark Blue Ice Dragon: High Cloud Navigator (Emits DARK BLUE ICE breath) - wide clockwise circular orbit
     { id: 'jade', element: 'ice',
       bodyMesh: 'dragon_body_jade', headMesh: 'dragon_head_jade',
       tail1Mesh: 'dragon_tail1_jade', tail2Mesh: 'dragon_tail2_jade',
       wingL: 'dragonWingL_jade', wingR: 'dragonWingR_jade', mesh: 'dragon_jade',
-      cx: 0, cz: -10, radius: 180, orbitSpeed: 0.10, dir: 1, baseAlt: 86, altAmp: 8, altFreq: 0.24, phaseOffset: 3.6,
-      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 8.0 },
+      cx: 0, cz: -10, radius: 155, orbitSpeed: 0.10, dir: 1, baseAlt: 64, altAmp: 5, altFreq: 0.24, phaseOffset: 3.6,
+      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 4.2 },
     // 4. Scarlet Red Fire Dragon: Celestial Sky Sovereign (Emits RED FIRE breath) - apex sky circular orbit
     { id: 'gold', element: 'fire',
       bodyMesh: 'dragon_body_gold', headMesh: 'dragon_head_gold',
       tail1Mesh: 'dragon_tail1_gold', tail2Mesh: 'dragon_tail2_gold',
       wingL: 'dragonWingL_gold', wingR: 'dragonWingR_gold', mesh: 'dragon_gold',
-      cx: 0, cz: -10, radius: 215, orbitSpeed: 0.082, dir: -1, baseAlt: 98, altAmp: 9, altFreq: 0.20, phaseOffset: 5.2,
-      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 9.0 }
+      cx: 0, cz: -10, radius: 185, orbitSpeed: 0.082, dir: -1, baseAlt: 72, altAmp: 6, altFreq: 0.20, phaseOffset: 5.2,
+      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 4.8 }
   ];
   for (const dc of dragonConfigs) {
     const initBreathT = dc.id === 'volcanic' ? 0.2 : dc.id === 'gold' ? 2.4 : dc.id === 'obsidian' ? 1.2 : 3.6;
