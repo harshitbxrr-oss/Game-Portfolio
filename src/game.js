@@ -580,12 +580,10 @@ function routeTo(tx, tz) {
 }
 
 // ---------- init ----------
-async function initGame(canvas, onProgress) {
+async function initGame(canvas, onProgress, fontLoads) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
@@ -609,14 +607,14 @@ async function initGame(canvas, onProgress) {
   if (!gl) throw new Error('nowebgl2');
   P.main = compile(SH.mainVS, SH.mainFS); P.tex = compile(SH.texVS, SH.texFS); P.flat = compile(SH.flatVS, SH.flatFS); P.part = compile(SH.partVS, SH.partFS);
   P.sky = compile(SH.skyVS, SH.skyFS); P.bright = compile(SH.quadVS, SH.brightFS); P.blur = compile(SH.quadVS, SH.blurFS); P.comp = compile(SH.quadVS, SH.compFS);
-  onProgress(0.18, 'Compiling shaders');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.25, 'Compiling shaders');
+  await new Promise(r => setTimeout(r, 0));
+
   const rng = mulberry(20260923);
-  onProgress(0.35, 'Raising Shatranj City');
-  await new Promise(r => requestAnimationFrame(r));
   const G = buildWorld(rng);
-  onProgress(0.58, 'Structuring spatial geometry');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.55, 'Raising Shatranj City');
+  await new Promise(r => setTimeout(r, 0));
+
   statics = chunkGeo(G, 110);
   initVehicleMeshes();
   MESH.water = geoToMesh(buildWaterGeo());
@@ -638,8 +636,8 @@ async function initGame(canvas, onProgress) {
   }
   MESH.peds = MESH.pedArchs.map(a => a.body);
   MESH.pin = geoToMesh(buildPin());
-  onProgress(0.76, 'Tuning the VAJRA-S1');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.78, 'Tuning the VAJRA-S1');
+
   // quads + flat meshes
   QUAD = (() => { const vao = gl.createVertexArray(); gl.bindVertexArray(vao); const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0, 0, 1, 0.5, -0.5, 0, 1, 1, 0.5, 0.5, 0, 1, 0, -0.5, -0.5, 0, 0, 1, 0.5, 0.5, 0, 1, 0, -0.5, 0.5, 0, 0, 0]), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12); gl.bindVertexArray(null); return { vao }; })();
   MESH.ring = staticFlat(ringVerts(7.6, 8.8, 64, [1, 1, 1, 1]).concat(ringVerts(0, 8.8, 64, [1, 1, 1, 0.18])));
@@ -647,6 +645,10 @@ async function initGame(canvas, onProgress) {
   MESH.marks = dynMesh([[0, 3], [1, 4]]); MESH.marksBuf = new Float32Array(420 * 6 * 7); MESH.marksN = 0; MESH.marksHead = 0;
   MESH.trail = dynMesh([[0, 3], [1, 4]]); MESH.trailBuf = new Float32Array(6 * 30 * 6 * 7);
   MESH.gps = dynMesh([[0, 3], [1, 4]]); MESH.gpsBuf = new Float32Array(40 * 9 * 7);
+
+  onProgress(0.88, 'Lighting the lanterns');
+  if (fontLoads) await Promise.race([fontLoads, new Promise(r => setTimeout(r, 100))]);
+
   // textures
   for (const s of W.signs) s.tex = texFromCanvas(s.cv);
   TEX.labels = {}; for (const lm of W.landmarks) TEX.labels[lm.id] = texFromCanvas(labelCanvas(lm));
@@ -655,8 +657,7 @@ async function initGame(canvas, onProgress) {
   TEX.plate = texFromCanvas(textCanvas(256, 64, (x, w, h) => { x.fillStyle = '#F4F1EA'; x.fillRect(0, 0, w, h); x.strokeStyle = '#17181C'; x.lineWidth = 4; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = '#17181C'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 44px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 4); }));
   TEX.decal = texFromCanvas(textCanvas(512, 96, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = '#E8892B'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `italic 700 72px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 6); }));
   const lm = W.landmarks.find(l => l.id === 'resume'); TEX.boardCv = document.createElement('canvas'); TEX.boardCv.width = 1024; TEX.boardCv.height = 474; drawBoard(TEX.boardCv, 1); TEX.board = texFromCanvas(TEX.boardCv); lm.boardFlip = -1;
-  onProgress(0.9, 'Lighting the lanterns');
-  await new Promise(r => requestAnimationFrame(r));
+
   initTraffic(rng); initEcosystem();
   GAME.mood = moodVec(MOODS.golden);
   resize(); addEventListener('resize', resize);
@@ -679,10 +680,9 @@ function boxVisible(P, mn, mx) { for (const p of P) { if (p[0] * (p[0] > 0 ? mx[
 const IDENT = M4.ident(), _M = new Float32Array(16);
 function resize() {
   const cv = gl.canvas;
-  const isUltra = GAME.quality === 'ultra';
-  const isHigh = GAME.quality === 'high' || isUltra;
-  const maxDpr = isUltra ? Math.min(devicePixelRatio || 1, 2.5) : (isHigh ? Math.min(devicePixelRatio || 1, 2.0) : 1.25);
-  const dpr = Math.max(1, maxDpr * (GAME.renderScale || 1));
+  const isHigh = GAME.quality === 'high' || GAME.quality === 'ultra';
+  const targetDpr = isHigh ? Math.min(devicePixelRatio || 1, 1.35) : 1.0;
+  const dpr = Math.max(1, targetDpr * (GAME.renderScale || 1));
   cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr));
   cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
   if (isHigh) setupTargets(cv.width, cv.height);

@@ -467,7 +467,7 @@ form.msg .err{color:#FF8A8E;font-size:14px;min-height:18px}
   <div class="sheet">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="setTitle">Settings</h2><button class="x" id="setX" aria-label="Close settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div class="set"><span>Time of day</span><div class="seg" data-set="tod"><button data-v="auto">Auto</button><button data-v="golden">Golden hour</button><button data-v="midday">Midday</button><button data-v="night">Night</button></div></div>
-    <div class="set"><span>Graphics</span><div class="seg" data-set="quality"><button data-v="ultra">Ultra</button><button data-v="high">High</button><button data-v="low">Low</button></div></div>
+    <div class="set"><span>Graphics</span><div class="seg" data-set="quality"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
     <div class="set"><span>Sound</span><div class="seg" data-set="sound"><button data-v="off">Off</button><button data-v="on">On</button></div></div>
     <div class="set"><span>Minimap</span><div class="seg" data-set="mm"><button data-v="rotate">Rotates with car</button><button data-v="north">North up</button></div></div>
     <div class="set"><span>Camera</span><div class="seg" data-set="cam"><button data-v="chase">Chase</button><button data-v="close">Close</button><button data-v="far">Far</button><button data-v="hood">Hood</button><button data-v="drone">Top-down</button></div></div>
@@ -1463,14 +1463,9 @@ void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
 SH.compFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_scene,u_bloom; uniform float u_bloomAmt,u_blur,u_vig; out vec4 o;
 
-// ACES Filmic Tone Mapping Curve (preserves high-dynamic range speculars, neons, and vibrant golds)
+// Fast ACES filmic tone mapping
 vec3 aces(vec3 x) {
-  const float a = 2.51;
-  const float b = 0.03;
-  const float c = 2.43;
-  const float d = 0.59;
-  const float e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
 }
 
 void main(){
@@ -1479,15 +1474,12 @@ void main(){
     vec2 d = v_uv - 0.5;
     float e = smoothstep(0.18, 0.72, length(d));
     vec3 acc = c;
-    for(int i = 1; i < 7; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.011 * u_blur).rgb;
-    c = mix(c, acc / 7.0, e);
+    for(int i = 1; i < 5; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.012 * u_blur).rgb;
+    c = mix(c, acc / 5.0, e);
   }
-  vec3 bloom = texture(u_bloom, v_uv).rgb;
-  c += bloom * (u_bloomAmt * 1.15);
-  c *= mix(1.0, smoothstep(1.10, 0.35, length(v_uv - 0.5)), u_vig * 0.72);
-  c = aces(c * 1.05);
-  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(luma), c, 1.06);
+  c += texture(u_bloom, v_uv).rgb * (u_bloomAmt * 1.1);
+  c *= mix(1.0, smoothstep(1.08, 0.35, length(v_uv - 0.5)), u_vig * 0.65);
+  c = aces(c * 1.04);
   o = vec4(c, 1.0);
 }`;
 
@@ -1505,8 +1497,7 @@ function setupTargets(w, h) {
   try {
     if (RT.del) RT.del();
     const maxSamples = gl.getParameter(gl.MAX_SAMPLES) || 0;
-    const isUltra = GAME.quality === 'ultra';
-    const samples = Math.min(isUltra ? 8 : 4, maxSamples);
+    const samples = Math.min(2, maxSamples);
     const ms = gl.createFramebuffer(), cr = gl.createRenderbuffer(), dr = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, cr);
     if (samples > 0) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, w, h);
@@ -1516,7 +1507,8 @@ function setupTargets(w, h) {
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, cr);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, dr);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo');
-    const scene = makeTex(w, h), qw = Math.max(1, w >> 1), qh = Math.max(1, h >> 1), A = makeTex(qw, qh), B = makeTex(qw, qh);
+    // Quarter-resolution bloom for fast, buttery smooth 60fps rendering
+    const scene = makeTex(w, h), qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2), A = makeTex(qw, qh), B = makeTex(qw, qh);
     Object.assign(RT, { ok: true, ms, scene, A, B, w, h, del() { gl.deleteFramebuffer(ms); gl.deleteRenderbuffer(cr); gl.deleteRenderbuffer(dr); for (const t of [scene, A, B]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); } } });
   } catch (e) { RT.ok = false; }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -3088,12 +3080,10 @@ function routeTo(tx, tz) {
 }
 
 // ---------- init ----------
-async function initGame(canvas, onProgress) {
+async function initGame(canvas, onProgress, fontLoads) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
@@ -3117,14 +3107,14 @@ async function initGame(canvas, onProgress) {
   if (!gl) throw new Error('nowebgl2');
   P.main = compile(SH.mainVS, SH.mainFS); P.tex = compile(SH.texVS, SH.texFS); P.flat = compile(SH.flatVS, SH.flatFS); P.part = compile(SH.partVS, SH.partFS);
   P.sky = compile(SH.skyVS, SH.skyFS); P.bright = compile(SH.quadVS, SH.brightFS); P.blur = compile(SH.quadVS, SH.blurFS); P.comp = compile(SH.quadVS, SH.compFS);
-  onProgress(0.18, 'Compiling shaders');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.25, 'Compiling shaders');
+  await new Promise(r => setTimeout(r, 0));
+
   const rng = mulberry(20260923);
-  onProgress(0.35, 'Raising Shatranj City');
-  await new Promise(r => requestAnimationFrame(r));
   const G = buildWorld(rng);
-  onProgress(0.58, 'Structuring spatial geometry');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.55, 'Raising Shatranj City');
+  await new Promise(r => setTimeout(r, 0));
+
   statics = chunkGeo(G, 110);
   initVehicleMeshes();
   MESH.water = geoToMesh(buildWaterGeo());
@@ -3146,8 +3136,8 @@ async function initGame(canvas, onProgress) {
   }
   MESH.peds = MESH.pedArchs.map(a => a.body);
   MESH.pin = geoToMesh(buildPin());
-  onProgress(0.76, 'Tuning the VAJRA-S1');
-  await new Promise(r => requestAnimationFrame(r));
+  onProgress(0.78, 'Tuning the VAJRA-S1');
+
   // quads + flat meshes
   QUAD = (() => { const vao = gl.createVertexArray(); gl.bindVertexArray(vao); const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0, 0, 1, 0.5, -0.5, 0, 1, 1, 0.5, 0.5, 0, 1, 0, -0.5, -0.5, 0, 0, 1, 0.5, 0.5, 0, 1, 0, -0.5, 0.5, 0, 0, 0]), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12); gl.bindVertexArray(null); return { vao }; })();
   MESH.ring = staticFlat(ringVerts(7.6, 8.8, 64, [1, 1, 1, 1]).concat(ringVerts(0, 8.8, 64, [1, 1, 1, 0.18])));
@@ -3155,6 +3145,10 @@ async function initGame(canvas, onProgress) {
   MESH.marks = dynMesh([[0, 3], [1, 4]]); MESH.marksBuf = new Float32Array(420 * 6 * 7); MESH.marksN = 0; MESH.marksHead = 0;
   MESH.trail = dynMesh([[0, 3], [1, 4]]); MESH.trailBuf = new Float32Array(6 * 30 * 6 * 7);
   MESH.gps = dynMesh([[0, 3], [1, 4]]); MESH.gpsBuf = new Float32Array(40 * 9 * 7);
+
+  onProgress(0.88, 'Lighting the lanterns');
+  if (fontLoads) await Promise.race([fontLoads, new Promise(r => setTimeout(r, 100))]);
+
   // textures
   for (const s of W.signs) s.tex = texFromCanvas(s.cv);
   TEX.labels = {}; for (const lm of W.landmarks) TEX.labels[lm.id] = texFromCanvas(labelCanvas(lm));
@@ -3163,8 +3157,7 @@ async function initGame(canvas, onProgress) {
   TEX.plate = texFromCanvas(textCanvas(256, 64, (x, w, h) => { x.fillStyle = '#F4F1EA'; x.fillRect(0, 0, w, h); x.strokeStyle = '#17181C'; x.lineWidth = 4; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = '#17181C'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 44px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 4); }));
   TEX.decal = texFromCanvas(textCanvas(512, 96, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = '#E8892B'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `italic 700 72px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 6); }));
   const lm = W.landmarks.find(l => l.id === 'resume'); TEX.boardCv = document.createElement('canvas'); TEX.boardCv.width = 1024; TEX.boardCv.height = 474; drawBoard(TEX.boardCv, 1); TEX.board = texFromCanvas(TEX.boardCv); lm.boardFlip = -1;
-  onProgress(0.9, 'Lighting the lanterns');
-  await new Promise(r => requestAnimationFrame(r));
+
   initTraffic(rng); initEcosystem();
   GAME.mood = moodVec(MOODS.golden);
   resize(); addEventListener('resize', resize);
@@ -3187,10 +3180,9 @@ function boxVisible(P, mn, mx) { for (const p of P) { if (p[0] * (p[0] > 0 ? mx[
 const IDENT = M4.ident(), _M = new Float32Array(16);
 function resize() {
   const cv = gl.canvas;
-  const isUltra = GAME.quality === 'ultra';
-  const isHigh = GAME.quality === 'high' || isUltra;
-  const maxDpr = isUltra ? Math.min(devicePixelRatio || 1, 2.5) : (isHigh ? Math.min(devicePixelRatio || 1, 2.0) : 1.25);
-  const dpr = Math.max(1, maxDpr * (GAME.renderScale || 1));
+  const isHigh = GAME.quality === 'high' || GAME.quality === 'ultra';
+  const targetDpr = isHigh ? Math.min(devicePixelRatio || 1, 1.35) : 1.0;
+  const dpr = Math.max(1, targetDpr * (GAME.renderScale || 1));
   cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr));
   cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
   if (isHigh) setupTargets(cv.width, cv.height);
@@ -7408,15 +7400,14 @@ GAME.on('frame', () => { const c = GAME.car; if (!FX.alpha || !(c.wheelspin > 0.
 
 // ---------- adaptive resolution: hold the frame rate by trading pixels ----------
 GAME.renderScale = 1;
-const PERF = { t: 0, n: 0, sum: 0, cool: 3, good: 0 };
+const PERF = { t: 0, n: 0, sum: 0, cool: 1.5, good: 0 };
 GAME.on('frame', dt => {
   if (GAME.phase === 'loading' || GAME.paused) return; PERF.sum += dt; PERF.n++; PERF.t += dt; PERF.cool -= dt;
-  if (PERF.t < 1.2) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
+  if (PERF.t < 0.6) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
   let s = GAME.renderScale;
-  const minScale = (GAME.quality === 'ultra' || GAME.quality === 'high') ? 0.75 : 0.5;
-  if (avg > 1 / 38 && s > minScale) { s = Math.max(minScale, s * (avg > 1 / 25 ? 0.82 : 0.92)); PERF.good = 0; }
-  else if (avg < 1 / 55) { if (++PERF.good >= 5 && s < 1) { s = Math.min(1, s * 1.08); PERF.good = 0; } } else PERF.good = 0;
-  if (Math.abs(s - GAME.renderScale) > 0.03) { GAME.renderScale = s; PERF.cool = 3.0; resize(); }
+  if (avg > 1 / 48 && s > 0.65) { s = Math.max(0.65, s * 0.86); PERF.good = 0; }
+  else if (avg < 1 / 58) { if (++PERF.good >= 4 && s < 1) { s = Math.min(1, s * 1.1); PERF.good = 0; } } else PERF.good = 0;
+  if (Math.abs(s - GAME.renderScale) > 0.02) { GAME.renderScale = s; PERF.cool = 2.0; resize(); }
 });
 
 // ---------- breakable street lamps and solid trees ----------
@@ -7649,14 +7640,14 @@ async function boot() {
   $('#ldName').textContent = PORTFOLIO.profile.name; document.querySelector('.ld-role').textContent = PORTFOLIO.profile.role;
   buildQuick(); buildQuests(); buildSpeedo(); applySettingsUI();
   GAME.reduced = store.get('motion', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full') === 'reduced';
-  GAME.quality = store.get('quality', isCoarse ? 'high' : 'ultra'); GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
+  GAME.quality = store.get('quality', 'high');
+  if (GAME.quality === 'ultra') GAME.quality = 'high';
+  GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
   applySettingsUI();
   try {
     const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();
-    await Promise.race([fontLoads, new Promise(r => setTimeout(r, 600))]);
-    setProgress(0.08, 'Loading the city');
-    await new Promise(r => requestAnimationFrame(r));
-    await initGame($('#gl'), setProgress);
+    setProgress(0.12, 'Loading the city');
+    await initGame($('#gl'), setProgress, fontLoads);
     buildMinimapBase(); startLoop(); booted = true;
     setProgress(1, 'Ready when you are');
     if (shouldReturnToRoad) {

@@ -188,14 +188,14 @@ async function boot() {
   $('#ldName').textContent = PORTFOLIO.profile.name; document.querySelector('.ld-role').textContent = PORTFOLIO.profile.role;
   buildQuick(); buildQuests(); buildSpeedo(); applySettingsUI();
   GAME.reduced = store.get('motion', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full') === 'reduced';
-  GAME.quality = store.get('quality', isCoarse ? 'high' : 'ultra'); GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
+  GAME.quality = store.get('quality', 'high');
+  if (GAME.quality === 'ultra') GAME.quality = 'high';
+  GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
   applySettingsUI();
   try {
     const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();
-    await Promise.race([fontLoads, new Promise(r => setTimeout(r, 600))]);
-    setProgress(0.08, 'Loading the city');
-    await new Promise(r => requestAnimationFrame(r));
-    await initGame($('#gl'), setProgress);
+    setProgress(0.12, 'Loading the city');
+    await initGame($('#gl'), setProgress, fontLoads);
     buildMinimapBase(); startLoop(); booted = true;
     setProgress(1, 'Ready when you are');
     if (shouldReturnToRoad) {

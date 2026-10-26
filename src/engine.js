@@ -958,14 +958,9 @@ void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
 SH.compFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_scene,u_bloom; uniform float u_bloomAmt,u_blur,u_vig; out vec4 o;
 
-// ACES Filmic Tone Mapping Curve (preserves high-dynamic range speculars, neons, and vibrant golds)
+// Fast ACES filmic tone mapping
 vec3 aces(vec3 x) {
-  const float a = 2.51;
-  const float b = 0.03;
-  const float c = 2.43;
-  const float d = 0.59;
-  const float e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
 }
 
 void main(){
@@ -974,15 +969,12 @@ void main(){
     vec2 d = v_uv - 0.5;
     float e = smoothstep(0.18, 0.72, length(d));
     vec3 acc = c;
-    for(int i = 1; i < 7; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.011 * u_blur).rgb;
-    c = mix(c, acc / 7.0, e);
+    for(int i = 1; i < 5; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.012 * u_blur).rgb;
+    c = mix(c, acc / 5.0, e);
   }
-  vec3 bloom = texture(u_bloom, v_uv).rgb;
-  c += bloom * (u_bloomAmt * 1.15);
-  c *= mix(1.0, smoothstep(1.10, 0.35, length(v_uv - 0.5)), u_vig * 0.72);
-  c = aces(c * 1.05);
-  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(luma), c, 1.06);
+  c += texture(u_bloom, v_uv).rgb * (u_bloomAmt * 1.1);
+  c *= mix(1.0, smoothstep(1.08, 0.35, length(v_uv - 0.5)), u_vig * 0.65);
+  c = aces(c * 1.04);
   o = vec4(c, 1.0);
 }`;
 
@@ -1000,8 +992,7 @@ function setupTargets(w, h) {
   try {
     if (RT.del) RT.del();
     const maxSamples = gl.getParameter(gl.MAX_SAMPLES) || 0;
-    const isUltra = GAME.quality === 'ultra';
-    const samples = Math.min(isUltra ? 8 : 4, maxSamples);
+    const samples = Math.min(2, maxSamples);
     const ms = gl.createFramebuffer(), cr = gl.createRenderbuffer(), dr = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, cr);
     if (samples > 0) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, w, h);
@@ -1011,7 +1002,8 @@ function setupTargets(w, h) {
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, cr);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, dr);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo');
-    const scene = makeTex(w, h), qw = Math.max(1, w >> 1), qh = Math.max(1, h >> 1), A = makeTex(qw, qh), B = makeTex(qw, qh);
+    // Quarter-resolution bloom for fast, buttery smooth 60fps rendering
+    const scene = makeTex(w, h), qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2), A = makeTex(qw, qh), B = makeTex(qw, qh);
     Object.assign(RT, { ok: true, ms, scene, A, B, w, h, del() { gl.deleteFramebuffer(ms); gl.deleteRenderbuffer(cr); gl.deleteRenderbuffer(dr); for (const t of [scene, A, B]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); } } });
   } catch (e) { RT.ok = false; }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
