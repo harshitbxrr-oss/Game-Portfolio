@@ -467,7 +467,7 @@ form.msg .err{color:#FF8A8E;font-size:14px;min-height:18px}
   <div class="sheet">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="setTitle">Settings</h2><button class="x" id="setX" aria-label="Close settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div class="set"><span>Time of day</span><div class="seg" data-set="tod"><button data-v="auto">Auto</button><button data-v="golden">Golden hour</button><button data-v="midday">Midday</button><button data-v="night">Night</button></div></div>
-    <div class="set"><span>Graphics</span><div class="seg" data-set="quality"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
+    <div class="set"><span>Graphics</span><div class="seg" data-set="quality"><button data-v="ultra">Ultra</button><button data-v="high">High</button><button data-v="low">Low</button></div></div>
     <div class="set"><span>Sound</span><div class="seg" data-set="sound"><button data-v="off">Off</button><button data-v="on">On</button></div></div>
     <div class="set"><span>Minimap</span><div class="seg" data-set="mm"><button data-v="rotate">Rotates with car</button><button data-v="north">North up</button></div></div>
     <div class="set"><span>Camera</span><div class="seg" data-set="cam"><button data-v="chase">Chase</button><button data-v="close">Close</button><button data-v="far">Far</button><button data-v="hood">Hood</button><button data-v="drone">Top-down</button></div></div>
@@ -784,7 +784,9 @@ float fbm(vec2 p){
 }
 
 vec3 env(vec3 r){
-  vec3 sky = mix(u_skyHor, u_skyTop, clamp(r.y * 1.5 + 0.08, 0.0, 1.0)) + u_skyHor * 0.25 * smoothstep(0.12, 0.0, r.y);
+  vec3 sky = mix(u_skyHor, u_skyTop, clamp(r.y * 1.5 + 0.08, 0.0, 1.0)) + u_skyHor * 0.32 * smoothstep(0.16, 0.0, r.y);
+  float sunSpec = pow(max(dot(r, normalize(u_sunDir)), 0.0), 30.0) * 1.5;
+  sky += u_sunCol * sunSpec;
   vec3 gnd = mix(u_ambGnd * 0.85 + u_fogCol * 0.15, u_skyHor * 0.55, smoothstep(-0.35, 0.0, r.y));
   return r.y >= 0.0 ? sky : gnd;
 }
@@ -1447,7 +1449,12 @@ const vec2 P[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); out vec2 v_uv;
 void main(){ v_uv=P[gl_VertexID]*0.5+0.5; gl_Position=vec4(P[gl_VertexID],0.,1.); }`;
 SH.brightFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_tex; uniform float u_th; out vec4 o;
-void main(){ vec3 c=texture(u_tex,v_uv).rgb; float l=max(c.r,max(c.g,c.b)); o=vec4(c*smoothstep(u_th,1.,l),1.); }`;
+void main(){
+  vec3 c = texture(u_tex, v_uv).rgb;
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float soft = smoothstep(u_th - 0.1, u_th + 0.22, l);
+  o = vec4(c * soft, 1.0);
+}`;
 SH.blurFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_tex; uniform vec2 u_dir; out vec4 o;
 void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
@@ -1455,13 +1462,36 @@ void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
   c+=(texture(u_tex,v_uv+u_dir*3.231).rgb+texture(u_tex,v_uv-u_dir*3.231).rgb)*0.07; o=vec4(c,1.); }`;
 SH.compFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_scene,u_bloom; uniform float u_bloomAmt,u_blur,u_vig; out vec4 o;
-void main(){ vec3 c=texture(u_scene,v_uv).rgb;
-  if(u_blur>0.001){ vec2 d=v_uv-0.5; float e=smoothstep(0.18,0.72,length(d)); vec3 acc=c; for(int i=1;i<7;i++) acc+=texture(u_scene,v_uv-d*float(i)*0.011*u_blur).rgb; c=mix(c,acc/7.,e); }
-  c+=texture(u_bloom,v_uv).rgb*u_bloomAmt;
-  c*=mix(1.,smoothstep(1.05,0.3,length(v_uv-0.5)),u_vig);
-  o=vec4(c,1.); }`;
 
-// ---------- Render targets for bloom ----------
+// ACES Filmic Tone Mapping Curve (preserves high-dynamic range speculars, neons, and vibrant golds)
+vec3 aces(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+void main(){
+  vec3 c = texture(u_scene, v_uv).rgb;
+  if(u_blur > 0.001){
+    vec2 d = v_uv - 0.5;
+    float e = smoothstep(0.18, 0.72, length(d));
+    vec3 acc = c;
+    for(int i = 1; i < 7; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.011 * u_blur).rgb;
+    c = mix(c, acc / 7.0, e);
+  }
+  vec3 bloom = texture(u_bloom, v_uv).rgb;
+  c += bloom * (u_bloomAmt * 1.15);
+  c *= mix(1.0, smoothstep(1.10, 0.35, length(v_uv - 0.5)), u_vig * 0.72);
+  c = aces(c * 1.05);
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(luma), c, 1.06);
+  o = vec4(c, 1.0);
+}`;
+
+// ---------- Render targets for bloom & MSAA ----------
 const RT = { ok: false };
 function makeTex(w, h) {
   const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
@@ -1474,7 +1504,9 @@ function makeTex(w, h) {
 function setupTargets(w, h) {
   try {
     if (RT.del) RT.del();
-    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
+    const maxSamples = gl.getParameter(gl.MAX_SAMPLES) || 0;
+    const isUltra = GAME.quality === 'ultra';
+    const samples = Math.min(isUltra ? 8 : 4, maxSamples);
     const ms = gl.createFramebuffer(), cr = gl.createRenderbuffer(), dr = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, cr);
     if (samples > 0) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, w, h);
@@ -1484,7 +1516,7 @@ function setupTargets(w, h) {
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, cr);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, dr);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo');
-    const scene = makeTex(w, h), qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2), A = makeTex(qw, qh), B = makeTex(qw, qh);
+    const scene = makeTex(w, h), qw = Math.max(1, w >> 1), qh = Math.max(1, h >> 1), A = makeTex(qw, qh), B = makeTex(qw, qh);
     Object.assign(RT, { ok: true, ms, scene, A, B, w, h, del() { gl.deleteFramebuffer(ms); gl.deleteRenderbuffer(cr); gl.deleteRenderbuffer(dr); for (const t of [scene, A, B]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); } } });
   } catch (e) { RT.ok = false; }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -3059,7 +3091,9 @@ function routeTo(tx, tz) {
 async function initGame(canvas, onProgress) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
+    { powerPreference: 'high-performance', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
@@ -3152,9 +3186,15 @@ function frustumPlanes(m) { const r = i => [m[i], m[4 + i], m[8 + i], m[12 + i]]
 function boxVisible(P, mn, mx) { for (const p of P) { if (p[0] * (p[0] > 0 ? mx[0] : mn[0]) + p[1] * (p[1] > 0 ? mx[1] : mn[1]) + p[2] * (p[2] > 0 ? mx[2] : mn[2]) + p[3] < 0) return false; } return true; }
 const IDENT = M4.ident(), _M = new Float32Array(16);
 function resize() {
-  const cv = gl.canvas, dpr = Math.min(devicePixelRatio || 1, GAME.quality === 'high' ? 1.5 : 1.25) * (GAME.renderScale || 1);
-  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr)); cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
-  if (GAME.quality === 'high') setupTargets(cv.width, cv.height); else { if (RT.del) RT.del(); RT.ok = false; }
+  const cv = gl.canvas;
+  const isUltra = GAME.quality === 'ultra';
+  const isHigh = GAME.quality === 'high' || isUltra;
+  const maxDpr = isUltra ? Math.min(devicePixelRatio || 1, 2.5) : (isHigh ? Math.min(devicePixelRatio || 1, 2.0) : 1.25);
+  const dpr = Math.max(1, maxDpr * (GAME.renderScale || 1));
+  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr));
+  cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
+  if (isHigh) setupTargets(cv.width, cv.height);
+  else { if (RT.del) RT.del(); RT.ok = false; }
 }
 
 // ---------- textures for landmarks ----------
@@ -4257,7 +4297,7 @@ function render() {
   const near = GAME.camMode === 'hood' && GAME.phase === 'driving' ? 0.12 : 0.5, proj = M4.persp(fovY, asp, near, 1500), view = M4.lookAt(eye, cam.look, [0, 1, 0]), vp = M4.mul(proj, view), ivp = M4.inv(vp);
   GAME.lastVP = vp; GAME.lastView = view;
   const R = [view[0], view[4], view[8]], U = [view[1], view[5], view[9]];
-  const useRT = RT.ok && GAME.quality === 'high';
+  const useRT = RT.ok && (GAME.quality === 'high' || GAME.quality === 'ultra');
   gl.bindFramebuffer(gl.FRAMEBUFFER, useRT ? RT.ms : null); gl.viewport(0, 0, w, h);
   gl.clearColor(m.fogCol[0], m.fogCol[1], m.fogCol[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.disable(gl.CULL_FACE); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
@@ -7368,14 +7408,15 @@ GAME.on('frame', () => { const c = GAME.car; if (!FX.alpha || !(c.wheelspin > 0.
 
 // ---------- adaptive resolution: hold the frame rate by trading pixels ----------
 GAME.renderScale = 1;
-const PERF = { t: 0, n: 0, sum: 0, cool: 2, good: 0 };
+const PERF = { t: 0, n: 0, sum: 0, cool: 3, good: 0 };
 GAME.on('frame', dt => {
   if (GAME.phase === 'loading' || GAME.paused) return; PERF.sum += dt; PERF.n++; PERF.t += dt; PERF.cool -= dt;
-  if (PERF.t < 1.0) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
+  if (PERF.t < 1.2) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
   let s = GAME.renderScale;
-  if (avg > 1 / 50 && s > 0.5) { s = Math.max(0.5, s * (avg > 1 / 30 ? 0.74 : 0.88)); PERF.good = 0; }
-  else if (avg < 1 / 58) { if (++PERF.good >= 6 && s < 1) { s = Math.min(1, s * 1.1); PERF.good = 0; } } else PERF.good = 0;
-  if (Math.abs(s - GAME.renderScale) > 0.02) { GAME.renderScale = s; PERF.cool = 2.5; resize(); }
+  const minScale = (GAME.quality === 'ultra' || GAME.quality === 'high') ? 0.75 : 0.5;
+  if (avg > 1 / 38 && s > minScale) { s = Math.max(minScale, s * (avg > 1 / 25 ? 0.82 : 0.92)); PERF.good = 0; }
+  else if (avg < 1 / 55) { if (++PERF.good >= 5 && s < 1) { s = Math.min(1, s * 1.08); PERF.good = 0; } } else PERF.good = 0;
+  if (Math.abs(s - GAME.renderScale) > 0.03) { GAME.renderScale = s; PERF.cool = 3.0; resize(); }
 });
 
 // ---------- breakable street lamps and solid trees ----------
@@ -7608,7 +7649,7 @@ async function boot() {
   $('#ldName').textContent = PORTFOLIO.profile.name; document.querySelector('.ld-role').textContent = PORTFOLIO.profile.role;
   buildQuick(); buildQuests(); buildSpeedo(); applySettingsUI();
   GAME.reduced = store.get('motion', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full') === 'reduced';
-  GAME.quality = store.get('quality', isCoarse ? 'low' : 'high'); GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
+  GAME.quality = store.get('quality', isCoarse ? 'high' : 'ultra'); GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
   applySettingsUI();
   try {
     const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();

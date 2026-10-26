@@ -279,7 +279,9 @@ float fbm(vec2 p){
 }
 
 vec3 env(vec3 r){
-  vec3 sky = mix(u_skyHor, u_skyTop, clamp(r.y * 1.5 + 0.08, 0.0, 1.0)) + u_skyHor * 0.25 * smoothstep(0.12, 0.0, r.y);
+  vec3 sky = mix(u_skyHor, u_skyTop, clamp(r.y * 1.5 + 0.08, 0.0, 1.0)) + u_skyHor * 0.32 * smoothstep(0.16, 0.0, r.y);
+  float sunSpec = pow(max(dot(r, normalize(u_sunDir)), 0.0), 30.0) * 1.5;
+  sky += u_sunCol * sunSpec;
   vec3 gnd = mix(u_ambGnd * 0.85 + u_fogCol * 0.15, u_skyHor * 0.55, smoothstep(-0.35, 0.0, r.y));
   return r.y >= 0.0 ? sky : gnd;
 }
@@ -942,7 +944,12 @@ const vec2 P[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3)); out vec2 v_uv;
 void main(){ v_uv=P[gl_VertexID]*0.5+0.5; gl_Position=vec4(P[gl_VertexID],0.,1.); }`;
 SH.brightFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_tex; uniform float u_th; out vec4 o;
-void main(){ vec3 c=texture(u_tex,v_uv).rgb; float l=max(c.r,max(c.g,c.b)); o=vec4(c*smoothstep(u_th,1.,l),1.); }`;
+void main(){
+  vec3 c = texture(u_tex, v_uv).rgb;
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float soft = smoothstep(u_th - 0.1, u_th + 0.22, l);
+  o = vec4(c * soft, 1.0);
+}`;
 SH.blurFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_tex; uniform vec2 u_dir; out vec4 o;
 void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
@@ -950,13 +957,36 @@ void main(){ vec3 c=texture(u_tex,v_uv).rgb*0.227;
   c+=(texture(u_tex,v_uv+u_dir*3.231).rgb+texture(u_tex,v_uv-u_dir*3.231).rgb)*0.07; o=vec4(c,1.); }`;
 SH.compFS = `#version 300 es
 precision highp float; in vec2 v_uv; uniform sampler2D u_scene,u_bloom; uniform float u_bloomAmt,u_blur,u_vig; out vec4 o;
-void main(){ vec3 c=texture(u_scene,v_uv).rgb;
-  if(u_blur>0.001){ vec2 d=v_uv-0.5; float e=smoothstep(0.18,0.72,length(d)); vec3 acc=c; for(int i=1;i<7;i++) acc+=texture(u_scene,v_uv-d*float(i)*0.011*u_blur).rgb; c=mix(c,acc/7.,e); }
-  c+=texture(u_bloom,v_uv).rgb*u_bloomAmt;
-  c*=mix(1.,smoothstep(1.05,0.3,length(v_uv-0.5)),u_vig);
-  o=vec4(c,1.); }`;
 
-// ---------- Render targets for bloom ----------
+// ACES Filmic Tone Mapping Curve (preserves high-dynamic range speculars, neons, and vibrant golds)
+vec3 aces(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+void main(){
+  vec3 c = texture(u_scene, v_uv).rgb;
+  if(u_blur > 0.001){
+    vec2 d = v_uv - 0.5;
+    float e = smoothstep(0.18, 0.72, length(d));
+    vec3 acc = c;
+    for(int i = 1; i < 7; i++) acc += texture(u_scene, v_uv - d * float(i) * 0.011 * u_blur).rgb;
+    c = mix(c, acc / 7.0, e);
+  }
+  vec3 bloom = texture(u_bloom, v_uv).rgb;
+  c += bloom * (u_bloomAmt * 1.15);
+  c *= mix(1.0, smoothstep(1.10, 0.35, length(v_uv - 0.5)), u_vig * 0.72);
+  c = aces(c * 1.05);
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(luma), c, 1.06);
+  o = vec4(c, 1.0);
+}`;
+
+// ---------- Render targets for bloom & MSAA ----------
 const RT = { ok: false };
 function makeTex(w, h) {
   const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
@@ -969,7 +999,9 @@ function makeTex(w, h) {
 function setupTargets(w, h) {
   try {
     if (RT.del) RT.del();
-    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
+    const maxSamples = gl.getParameter(gl.MAX_SAMPLES) || 0;
+    const isUltra = GAME.quality === 'ultra';
+    const samples = Math.min(isUltra ? 8 : 4, maxSamples);
     const ms = gl.createFramebuffer(), cr = gl.createRenderbuffer(), dr = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, cr);
     if (samples > 0) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, w, h);
@@ -979,7 +1011,7 @@ function setupTargets(w, h) {
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, cr);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, dr);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo');
-    const scene = makeTex(w, h), qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2), A = makeTex(qw, qh), B = makeTex(qw, qh);
+    const scene = makeTex(w, h), qw = Math.max(1, w >> 1), qh = Math.max(1, h >> 1), A = makeTex(qw, qh), B = makeTex(qw, qh);
     Object.assign(RT, { ok: true, ms, scene, A, B, w, h, del() { gl.deleteFramebuffer(ms); gl.deleteRenderbuffer(cr); gl.deleteRenderbuffer(dr); for (const t of [scene, A, B]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); } } });
   } catch (e) { RT.ok = false; }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);

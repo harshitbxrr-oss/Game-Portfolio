@@ -583,7 +583,9 @@ function routeTo(tx, tz) {
 async function initGame(canvas, onProgress) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
+    { powerPreference: 'high-performance', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', antialias: true, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
     { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
@@ -676,9 +678,15 @@ function frustumPlanes(m) { const r = i => [m[i], m[4 + i], m[8 + i], m[12 + i]]
 function boxVisible(P, mn, mx) { for (const p of P) { if (p[0] * (p[0] > 0 ? mx[0] : mn[0]) + p[1] * (p[1] > 0 ? mx[1] : mn[1]) + p[2] * (p[2] > 0 ? mx[2] : mn[2]) + p[3] < 0) return false; } return true; }
 const IDENT = M4.ident(), _M = new Float32Array(16);
 function resize() {
-  const cv = gl.canvas, dpr = Math.min(devicePixelRatio || 1, GAME.quality === 'high' ? 1.5 : 1.25) * (GAME.renderScale || 1);
-  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr)); cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
-  if (GAME.quality === 'high') setupTargets(cv.width, cv.height); else { if (RT.del) RT.del(); RT.ok = false; }
+  const cv = gl.canvas;
+  const isUltra = GAME.quality === 'ultra';
+  const isHigh = GAME.quality === 'high' || isUltra;
+  const maxDpr = isUltra ? Math.min(devicePixelRatio || 1, 2.5) : (isHigh ? Math.min(devicePixelRatio || 1, 2.0) : 1.25);
+  const dpr = Math.max(1, maxDpr * (GAME.renderScale || 1));
+  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr));
+  cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
+  if (isHigh) setupTargets(cv.width, cv.height);
+  else { if (RT.del) RT.del(); RT.ok = false; }
 }
 
 // ---------- textures for landmarks ----------
@@ -1781,7 +1789,7 @@ function render() {
   const near = GAME.camMode === 'hood' && GAME.phase === 'driving' ? 0.12 : 0.5, proj = M4.persp(fovY, asp, near, 1500), view = M4.lookAt(eye, cam.look, [0, 1, 0]), vp = M4.mul(proj, view), ivp = M4.inv(vp);
   GAME.lastVP = vp; GAME.lastView = view;
   const R = [view[0], view[4], view[8]], U = [view[1], view[5], view[9]];
-  const useRT = RT.ok && GAME.quality === 'high';
+  const useRT = RT.ok && (GAME.quality === 'high' || GAME.quality === 'ultra');
   gl.bindFramebuffer(gl.FRAMEBUFFER, useRT ? RT.ms : null); gl.viewport(0, 0, w, h);
   gl.clearColor(m.fogCol[0], m.fogCol[1], m.fogCol[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.disable(gl.CULL_FACE); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
