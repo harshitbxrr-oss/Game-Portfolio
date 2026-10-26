@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shatranj City">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="screen-orientation" content="landscape">
+<meta name="x5-orientation" content="landscape">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
 <title>Shatranj City — Harshit Kumar Sinha, UI/UX Designer</title>
 <meta name="description" content="Drive the VAJRA-S1 through Shatranj City to explore the portfolio of Harshit Kumar Sinha, UI/UX designer.">
 <meta name="theme-color" content="#0E1220">
@@ -333,21 +341,53 @@ form.msg .err{color:#FF8A8E;font-size:14px;min-height:18px}
   #quick header .btn{white-space:nowrap}
 }
 .pager span{white-space:nowrap}
-@media (max-height:520px) and (orientation:landscape){
+/* Tablet portrait support */
+.ff-tablet-p{--edge:18px;--joy:138px;--tb:66px;--gap:10px}
+.ff-tablet-p .minimap{width:130px;height:130px;left:calc(env(safe-area-inset-left) + var(--edge));bottom:auto;top:calc(env(safe-area-inset-top) + 90px)}
+.ff-tablet-p .speedo{width:144px;height:144px;left:50%;right:auto;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 8px)}
+.ff-tablet-p .toast{top:calc(env(safe-area-inset-top) + 110px)}
+
+/* ---------- rotate to landscape overlay ---------- */
+.rotate-screen{position:fixed;inset:0;z-index:9999;display:none;background:radial-gradient(circle at center,rgba(22,27,46,.96) 0%,rgba(7,9,15,.98) 100%);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff}
+.rotate-screen.active{display:flex}
+.rotate-box{max-width:390px;width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;background:linear-gradient(145deg,rgba(22,27,46,.88),rgba(14,18,32,.95));border:1.5px solid rgba(95,244,244,.35);box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 35px rgba(95,244,244,.15);border-radius:24px;padding:32px 24px;animation:rise .4s cubic-bezier(.16,1,.3,1)}
+.rotate-box h2{font-family:var(--f-display);font-size:38px;letter-spacing:1px;margin:0;line-height:1;color:#fff}
+.rotate-box p{margin:0;font-size:15px;line-height:1.45;color:var(--muted)}
+.rotate-phone-anim{position:relative;width:84px;height:84px;display:grid;place-items:center;margin-bottom:4px}
+.phone-frame{width:38px;height:62px;border:2.5px solid #fff;border-radius:9px;position:relative;box-shadow:0 0 16px rgba(95,244,244,.4);animation:rotateDeviceAnim 2.8s cubic-bezier(.4,0,.2,1) infinite}
+.phone-notch{position:absolute;top:3px;left:50%;transform:translateX(-50%);width:12px;height:2px;background:#fff;border-radius:2px}
+.phone-screen{position:absolute;inset:4px;background:linear-gradient(135deg,rgba(95,244,244,.28),rgba(10,90,168,.4));border-radius:5px}
+.rotate-arrow{position:absolute;font-size:28px;color:var(--cyan);right:-6px;top:2px;animation:spinArrow 2.8s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes rotateDeviceAnim{
+  0%,18%{transform:rotate(0deg)}
+  50%,82%{transform:rotate(-90deg)}
+  100%{transform:rotate(0deg)}
+}
+@keyframes spinArrow{
+  0%,18%{transform:scale(1) rotate(0deg);opacity:.6}
+  50%,82%{transform:scale(1.2) rotate(-90deg);opacity:1}
+  100%{transform:scale(1) rotate(0deg);opacity:.6}
+}
+
+@media (max-height:580px) and (orientation:landscape){
   .card{grid-template-columns:34% 66%;grid-template-rows:none}
   .card .foot{left:34%;padding:10px 20px}
   .card .art .where{left:18px;bottom:16px}.card .art .where b{font-size:32px}
   .card .body{padding:18px 24px 80px}
   .body h2{font-size:34px}
   .ov{padding:8px}
-  .ld{align-self:start;padding-top:calc(env(safe-area-inset-top) + 14px);padding-bottom:14px}
-  .ld-city{margin-bottom:4px;font-size:15px}
-  .ld h1{font-size:40px}
-  .ld-role{margin:4px 0 6px;font-size:20px}
-  .ld p{font-size:15px;margin-bottom:12px}
-  .ld-status{margin:6px 0 10px}
-  .ld .btn{padding:10px 20px;font-size:17px}
-  .keys{display:none}
+  #loader{justify-content:center!important;align-items:center!important;padding:calc(env(safe-area-inset-top) + 8px) clamp(16px,4vw,32px) calc(env(safe-area-inset-bottom) + 8px)!important}
+  .ld{max-width:540px!important;max-height:calc(100vh - 18px)!important;overflow-y:auto!important;padding:14px 20px!important;border-radius:16px!important;align-self:center!important}
+  .ld-city{font-size:13px!important;margin-bottom:2px!important}
+  .ld h1{font-size:clamp(22px,4vw,32px)!important;line-height:1!important}
+  .ld-role{font-size:16px!important;margin:2px 0 4px!important}
+  .ld p{font-size:13px!important;line-height:1.35!important;margin-bottom:8px!important}
+  .ld .bar{height:6px!important;margin:4px 0!important}
+  .ld-status{font-size:12px!important;margin:4px 0 8px!important}
+  .ld .cta{margin-top:6px!important;gap:8px!important}
+  .ld .cta .btn{padding:8px 16px!important;font-size:15px!important;min-height:38px!important}
+  .ld .keys{display:none!important}
+  .ld p.touch-only{margin-top:8px!important;font-size:13px!important}
 }
 #settings .sheet,#help .sheet{max-height:100%;overflow:auto;overscroll-behavior:contain}
 #help .sheet{width:min(620px,100%);background:rgba(14,18,32,.95);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-l);padding:22px 24px}
@@ -497,6 +537,19 @@ form.msg .err{color:#FF8A8E;font-size:14px;min-height:18px}
   <header><b>Harshit Kumar Sinha</b><div style="display:flex;gap:8px"><button class="btn btn-ghost" id="qResume" style="padding:9px 18px;font-size:17px">Resume</button><button class="btn btn-primary" id="qDrive" style="padding:9px 18px;font-size:17px">Drive the city</button></div></header>
   <div class="qhero"><div><h1 id="qName"></h1><div class="role" id="qRole"></div><p id="qTag" style="font-size:19px;line-height:1.55;max-width:44ch;margin:0"></p></div><img src="__REF01__" alt="The VAJRA-S1 driving through Cyber-Chowk at night"></div>
   <div id="qSections"></div>
+</div>
+
+<!-- Rotate to landscape prompt for mobile & tablet in portrait -->
+<div id="rotateScreen" class="rotate-screen" aria-live="polite">
+  <div class="rotate-box">
+    <div class="rotate-phone-anim" aria-hidden="true">
+      <div class="phone-frame"><span class="phone-notch"></span><span class="phone-screen"></span></div>
+      <div class="rotate-arrow">⟳</div>
+    </div>
+    <h2>Rotate to Landscape</h2>
+    <p>Shatranj City is designed for a widescreen driving experience. Turn your device sideways to play.</p>
+    <button class="btn btn-primary" id="btnAutoRotate" type="button">Rotate &amp; Fullscreen ⟳</button>
+  </div>
 </div>
 
 <script>

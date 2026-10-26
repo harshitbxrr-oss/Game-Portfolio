@@ -124,6 +124,7 @@ function dismissLoader(onDone) {
 }
 
 function returnToRoad() {
+  if (window.__game && window.__game.autoLockLandscape) window.__game.autoLockLandscape();
   dismissLoader();
   $('#tourbar').classList.add('hidden');
   document.body.classList.remove('letterbox');
@@ -216,7 +217,7 @@ async function boot() {
     setTimeout(() => openQuick(true), 900);
   }
 }
-$('#btnStart').onclick = () => { if (!booted) return; dismissLoader(() => { resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } }); };
+$('#btnStart').onclick = () => { if (!booted) return; if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); dismissLoader(() => { resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } }); };
 $('#btnQuick2').onclick = () => openQuick(!booted);
 
 // ---------- tour ----------
@@ -372,7 +373,7 @@ function buildQuick() {
 function openQuick(noGL) { lastFocus = document.activeElement; $('#quick').classList.remove('hidden'); $('#noglNote').classList.toggle('hidden', !noGL); $('#qDrive').classList.remove('hidden'); GAME.paused = true; $('#quick').scrollTop = 0; $('#qDrive').focus(); }
 function closeQuick() { $('#quick').classList.add('hidden'); GAME.paused = false; restoreFocus($('#quick')); }
 $('#btnQuick').onclick = () => openQuick(false);
-$('#qDrive').onclick = () => { closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) $('#btnStart').click(); } else { boot(); } };
+$('#qDrive').onclick = () => { if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) $('#btnStart').click(); } else { boot(); } };
 $('#qResume').onclick = () => { const s = [...document.querySelectorAll('#qSections section')][3]; s && s.scrollIntoView({ behavior: GAME.reduced ? 'auto' : 'smooth' }); };
 
 // ---------- map ----------

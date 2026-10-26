@@ -111,6 +111,8 @@ function main() {
     copyFileSync(join(ROOT, 'assets', 'og-image.jpg'), join(out, 'og-image.jpg'));
     const resume = join(ROOT, 'assets', 'harshit-kumar-sinha-resume.pdf');
     if (existsSync(resume)) copyFileSync(resume, join(out, 'assets', 'harshit-kumar-sinha-resume.pdf'));
+    const manifest = join(ROOT, 'manifest.json');
+    if (existsSync(manifest)) copyFileSync(manifest, join(out, 'manifest.json'));
     const caseStudiesDir = join(ROOT, 'case-studies');
     if (existsSync(caseStudiesDir)) {
       cpSync(caseStudiesDir, join(out, 'case-studies'), { recursive: true, force: true });
