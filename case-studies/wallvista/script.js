@@ -191,14 +191,21 @@ const savedTheme = localStorage.getItem("wv_theme");
 const isDarkInit = urlParams.get("theme") === "dark" || urlParams.get("from") === "game" || savedTheme === "dark" || (!savedTheme && urlParams.get("theme") !== "light");
 applyTheme(isDarkInit);
 
-document.querySelectorAll('.portfolio-return, a[href*="index.html"], a[href*="return=road"]').forEach((link) => {
+document.querySelectorAll('.portfolio-return, a[href*="return=road"]').forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
+    const href = link.getAttribute('href');
+    if (href && href.startsWith('http')) {
+      window.location.href = href;
+      return;
+    }
     const path = window.location.pathname;
-    const base = path.includes('/case-studies/') 
-      ? path.slice(0, path.indexOf('/case-studies/')) 
-      : '';
-    window.location.href = (base || '') + '/index.html?return=road';
+    if (path.includes('/case-studies/')) {
+      const base = path.slice(0, path.indexOf('/case-studies/'));
+      window.location.href = (base ? base : '') + '/index.html?return=road';
+    } else {
+      window.location.href = '../../index.html?return=road';
+    }
   });
 });
 
