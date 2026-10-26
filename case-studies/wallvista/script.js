@@ -16,9 +16,9 @@ const screens = [
 
 const grid = document.querySelector("#screen-grid");
 const dialog = document.querySelector("#screen-dialog");
-const dialogImage = dialog.querySelector(".dialog-image-wrap img");
-const dialogTitle = dialog.querySelector(".dialog-title");
-const dialogCounter = dialog.querySelector(".dialog-bottom span");
+const dialogImage = dialog ? dialog.querySelector(".dialog-image-wrap img") : null;
+const dialogTitle = dialog ? dialog.querySelector(".dialog-title") : null;
+const dialogCounter = dialog ? dialog.querySelector(".dialog-bottom span") : null;
 const tabs = [...document.querySelectorAll(".gallery-tab")];
 const imageFolder = "./Wall%20Vista%20Screens/";
 const wireframeFolder = "./Wireframes/";
@@ -70,12 +70,17 @@ function renderGallery() {
 }
 
 function updateDialog() {
-  if (!dialog) return;
+  if (!dialog || !dialogImage || !dialogTitle || !dialogCounter) return;
   const [number, title] = screens[selectedScreen];
+  const modeLabel = galleryMode === "wireframes" ? "Wireframe" : "Designed screen";
   dialogImage.src = imagePath(selectedScreen);
-  dialogImage.alt = `WallVista ${title} ${galleryMode === "wireframes" ? "wireframe" : "screen"}`;
-  dialogTitle.textContent = `${number} ${title} · ${galleryMode === "wireframes" ? "Wireframe" : "Screen"}`;
-  dialogCounter.textContent = `${selectedScreen + 1} / ${screens.length}`;
+  dialogImage.alt = `${modeLabel}: ${title}`;
+  dialogTitle.textContent = `${number} / ${String(screens.length).padStart(2, "0")}  ·  ${title} — ${modeLabel}`;
+  dialogCounter.textContent = `${number} / ${String(screens.length).padStart(2, "0")}`;
+  const prevBtn = dialog.querySelector(".dialog-prev");
+  const nextBtn = dialog.querySelector(".dialog-next");
+  if (prevBtn) prevBtn.disabled = selectedScreen === 0;
+  if (nextBtn) nextBtn.disabled = selectedScreen === screens.length - 1;
 }
 
 function openScreen(index) {
@@ -95,19 +100,22 @@ function closeScreen() {
 }
 
 function stepScreen(delta) {
-  selectedScreen = (selectedScreen + delta + screens.length) % screens.length;
-  updateDialog();
+  const next = selectedScreen + delta;
+  if (next >= 0 && next < screens.length) {
+    selectedScreen = next;
+    updateDialog();
+  }
 }
 
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
-    tabs.forEach((t) => {
-      t.classList.remove("active");
-      t.setAttribute("aria-pressed", "false");
+    galleryMode = tab.dataset.galleryMode || tab.dataset.mode || "screens";
+    tabs.forEach((item) => {
+      const active = item === tab;
+      item.classList.toggle("is-active", active);
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
     });
-    tab.classList.add("active");
-    tab.setAttribute("aria-pressed", "true");
-    galleryMode = tab.dataset.mode;
     renderGallery();
     if (dialog && dialog.open) updateDialog();
   });
@@ -120,24 +128,26 @@ if (dialog) {
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) closeScreen();
   });
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeScreen();
+      return;
+    }
+    if (event.key === "ArrowLeft") stepScreen(-1);
+    if (event.key === "ArrowRight") stepScreen(1);
+  });
 }
-
-window.addEventListener("keydown", (event) => {
-  if (!dialog || !dialog.open) return;
-  if (event.key === "ArrowLeft") stepScreen(-1);
-  if (event.key === "ArrowRight") stepScreen(1);
-});
 
 renderGallery();
 
 // Theme and Navigation Handling
 const themeToggle = document.querySelector(".theme-toggle");
-const themeIcon = themeToggle?.querySelector(".theme-icon");
-const themeLabel = themeToggle?.querySelector(".theme-label");
+const themeIcon = themeToggle ? themeToggle.querySelector(".theme-icon") : null;
+const themeLabel = themeToggle ? themeToggle.querySelector(".theme-label") : null;
 const themeColor = document.querySelector('meta[name="theme-color"]');
 const prototypeFrame = document.querySelector(".prototype-embed iframe");
 const menuToggle = document.querySelector(".menu-toggle");
-const siteNav = document.querySelector(".site-nav");
+const siteNav = document.querySelector("#site-nav") || document.querySelector(".site-nav");
 const themeStorageKey = "portfolio-theme";
 const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -172,15 +182,14 @@ function syncPrototypeTheme() {
       resizePrototypeFrame(frameDocument);
     }
   } catch (e) {
-    // Cross-origin fallback
+    // Sandbox or cross-origin fallback
   }
 }
 
 if (prototypeFrame) {
   prototypeFrame.addEventListener("load", () => {
     syncPrototypeTheme();
-    // Re-check size after styles settle
-    setTimeout(syncPrototypeTheme, 300);
+    setTimeout(syncPrototypeTheme, 350);
   });
 }
 window.addEventListener("resize", syncPrototypeTheme);
@@ -252,7 +261,35 @@ if (themeToggle) {
 
 if (menuToggle && siteNav) {
   menuToggle.addEventListener("click", () => {
-    const open = siteNav.classList.toggle("open");
-    menuToggle.setAttribute("aria-expanded", String(open));
+    const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
+    menuToggle.setAttribute("aria-expanded", String(!isOpen));
+    menuToggle.setAttribute("aria-label", isOpen ? "Open navigation" : "Close navigation");
+    siteNav.classList.toggle("is-open", !isOpen);
+  });
+
+  siteNav.addEventListener("click", (event) => {
+    if (event.target.closest("a")) {
+      menuToggle.setAttribute("aria-expanded", "false");
+      menuToggle.setAttribute("aria-label", "Open navigation");
+      siteNav.classList.remove("is-open");
+    }
   });
 }
+
+// Smooth reveal on scroll
+const revealObserver = "IntersectionObserver" in window
+  ? new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 })
+  : null;
+
+document.querySelectorAll(".section-index, .intro-grid, .problem-grid, .context-heading, .persona-card, .journey-heading, .journey-step, .screens-heading, .decision-row, .validation-grid, .prototype-heading").forEach((element) => {
+  element.classList.add("reveal");
+  if (revealObserver) revealObserver.observe(element);
+  else element.classList.add("is-visible");
+});
