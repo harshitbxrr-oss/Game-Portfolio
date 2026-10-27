@@ -20,17 +20,17 @@ const dialogImage = dialog.querySelector(".dialog-image-wrap img");
 const dialogTitle = dialog.querySelector(".dialog-title");
 const dialogCounter = dialog.querySelector(".dialog-bottom span");
 const tabs = [...document.querySelectorAll(".gallery-tab")];
-const imageFolder = "./Wall%20Vista%20Screens/";
+const imageFolder = "./Wall Vista Screens/";
 const wireframeFolder = "./Wireframes/";
 let galleryMode = "screens";
 let selectedScreen = 0;
 
 function imagePath(index, mode = galleryMode) {
   const [, , screenImage, wireframeImage] = screens[index];
-  if (mode === "wireframes") {
-    return wireframeFolder + encodeURIComponent(wireframeImage).replaceAll("%2F", "/");
-  }
-  return imageFolder + encodeURIComponent(screenImage).replaceAll("%2F", "/");
+  const folder = mode === "wireframes" ? wireframeFolder : imageFolder;
+  const file = mode === "wireframes" ? wireframeImage : screenImage;
+  // encodeURI handles spaces in folder names; encodeURIComponent handles filename spaces
+  return encodeURI(folder + encodeURIComponent(file).replaceAll("%2F", "/"));
 }
 
 function renderGallery() {
@@ -48,6 +48,16 @@ function renderGallery() {
     image.alt = "";
     image.loading = "lazy";
     image.decoding = "async";
+    image.onerror = () => {
+      image.style.display = "none";
+      thumb.style.background = "#e9e6dd";
+      thumb.style.color = "#817e76";
+      thumb.textContent = "Image not found";
+      thumb.style.display = "flex";
+      thumb.style.alignItems = "center";
+      thumb.style.justifyContent = "center";
+      thumb.style.fontSize = "10px";
+    };
     const view = document.createElement("span");
     view.className = "screen-view";
     view.setAttribute("aria-hidden", "true");
@@ -71,6 +81,18 @@ function updateDialog() {
   const [number, title] = screens[selectedScreen];
   const modeLabel = galleryMode === "wireframes" ? "Wireframe" : "Designed screen";
   dialogImage.src = imagePath(selectedScreen);
+  dialogImage.onerror = () => {
+    dialogImage.style.display = "none";
+    dialogImage.parentElement.style.background = "#e9e6dd";
+    dialogImage.parentElement.style.display = "flex";
+    dialogImage.parentElement.style.alignItems = "center";
+    dialogImage.parentElement.style.justifyContent = "center";
+    const fallback = document.createElement("div");
+    fallback.textContent = "Image not found";
+    fallback.style.color = "#817e76";
+    fallback.style.fontSize = "14px";
+    dialogImage.parentElement.appendChild(fallback);
+  };
   dialogImage.alt = `${modeLabel}: ${title}`;
   dialogTitle.textContent = `${number} / ${String(screens.length).padStart(2, "0")}  ·  ${title} — ${modeLabel}`;
   dialogCounter.textContent = `${number} / ${String(screens.length).padStart(2, "0")}`;
