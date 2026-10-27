@@ -71,7 +71,7 @@ const R = {
         </div>
       `).join('');
   },
-  cases(i, withTitle = true) { const c = PORTFOLIO.caseStudies[i]; return `${c.cover ? `<figure class="case-cover"><img src="${esc(c.cover)}" alt="${esc(c.coverAlt || `${c.title} cover`)}"></figure>` : ''}${withTitle ? `<h2>${esc(c.title)}</h2>` : `<h3 style="margin-top:0;font-size:26px">${esc(c.title)}</h3>`}<p class="lede">${esc(c.summary)}</p><div class="case-meta"><span>Role <b>${esc(c.role)}</b></span><span>Duration <b>${esc(c.duration)}</b></span></div><h3>The problem</h3><p>${esc(c.problem)}</p><h3>Process</h3><ul class="steps">${c.process.map(s => `<li>${esc(s)}</li>`).join('')}</ul><h3>Outcome</h3><ul class="plain">${c.outcome.map(s => `<li>${esc(s)}</li>`).join('')}</ul>${c.link && c.link !== '#' ? `<p style="margin-top:18px"><a class="case-study-link" href="${esc(c.link)}">View case study <span aria-hidden="true">↗</span></a></p>` : ''}`; },
+  cases(i, withTitle = true) { const c = PORTFOLIO.caseStudies[i]; return `${c.cover ? `<figure class="case-cover"><img src="${esc(c.cover)}" alt="${esc(c.coverAlt || `${c.title} cover`)}"></figure>` : ''}${withTitle ? `<h2>${esc(c.title)}</h2>` : `<h3 style="margin-top:0;font-size:26px">${esc(c.title)}</h3>`}<p class="lede">${esc(c.summary)}</p><div class="case-meta"><span>Role <b>${esc(c.role)}</b></span><span>Duration <b>${esc(c.duration)}</b></span></div><h3>The problem</h3><p>${esc(c.problem)}</p><h3>Process</h3><ul class="steps">${c.process.map(s => `<li>${esc(s)}</li>`).join('')}</ul><h3>Outcome</h3><ul class="plain">${c.outcome.map(s => `<li>${esc(s)}</li>`).join('')}</ul>${c.link && c.link !== '#' ? `<p style="margin-top:22px"><a class="btn btn-primary case-study-link" href="${esc(c.link)}" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;font-size:16px;text-decoration:none;border-radius:10px;font-weight:700;">View Full Case Study & Interactive Prototype <span aria-hidden="true">↗</span></a></p>` : ''}`; },
   resume() {
     const r = PORTFOLIO.resume;
     return `${r.summary ? `<p class="lede" style="margin-bottom:24px">${esc(r.summary)}</p>` : ''}<h3>Projects & Experience</h3>${r.experience.map(e => `<div class="job"><div class="when">${esc(e.start)} to ${esc(e.end)}</div><b>${esc(e.role)}</b>, ${esc(e.company)}<ul class="plain">${e.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></div>`).join('')}<h3>Education</h3>${r.education.map(e => `<div class="job"><div class="when">${esc(e.years)}</div><b>${esc(e.degree)}</b>, ${esc(e.school)}</div>`).join('')}<div class="ticket"><div class="l"><span style="font-family:var(--f-label);font-weight:600">Platform 1 · PDF</span><b>Harshit Kumar Sinha — Resume</b></div><div class="r"><a href="${esc(r.pdfUrl)}" ${r.pdfUrl === '#' ? 'data-missing="1"' : 'target="_blank" rel="noopener"'}>Open PDF ↗</a></div></div>`;
@@ -109,8 +109,23 @@ window.addEventListener('beforeunload', () => {
   } catch (e) {}
 });
 
+function dismissLoader(onDone) {
+  const ld = $('#loader');
+  if (!ld || ld.classList.contains('hidden')) {
+    if (onDone) onDone();
+    return;
+  }
+  ld.classList.add('fading');
+  setTimeout(() => {
+    ld.classList.add('hidden');
+    ld.classList.remove('fading');
+    if (onDone) onDone();
+  }, 220);
+}
+
 function returnToRoad() {
-  $('#loader').classList.add('hidden');
+  if (window.__game && window.__game.autoLockLandscape) window.__game.autoLockLandscape();
+  dismissLoader();
   $('#tourbar').classList.add('hidden');
   document.body.classList.remove('letterbox');
   resize();
@@ -127,6 +142,9 @@ function returnToRoad() {
   } else {
     Object.assign(c, { x: 200, z: 188, yaw: 0, vx: 0, vz: 0, speed: 0, auto: 0 });
   }
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
 
   CAMFX.orbit = null;
   CAMFX.tour = null;
@@ -139,6 +157,8 @@ function returnToRoad() {
   cam.yawL = c.yaw;
   cam.orbitA = 0;
   cam.idle = 0;
+  cam.off = null;
+  cam.loff = null;
 
   $('#hud').classList.remove('hidden');
   if (!GAME.target) {
@@ -153,7 +173,7 @@ function returnToRoad() {
 
 // ---------- boot ----------
 let booted = false;
-function setProgress(p, label) { $('#ldBar i').style.width = Math.round(p * 100) + '%'; $('#ldBar').setAttribute('aria-valuenow', Math.round(p * 100)); if (label) $('#ldStatus').textContent = label; }
+function setProgress(p, label) { const pct = Math.min(100, Math.round(p * 100)); $('#ldBar i').style.width = pct + '%'; $('#ldBar').setAttribute('aria-valuenow', pct); if (label) $('#ldStatus').textContent = label; }
 async function boot() {
   const urlParams = new URLSearchParams(window.location.search);
   const shouldReturnToRoad = urlParams.get('return') === 'road' || 
@@ -169,18 +189,30 @@ async function boot() {
   $('#ldName').textContent = PORTFOLIO.profile.name; document.querySelector('.ld-role').textContent = PORTFOLIO.profile.role;
   buildQuick(); buildQuests(); buildSpeedo(); applySettingsUI();
   GAME.reduced = store.get('motion', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full') === 'reduced';
-  GAME.quality = store.get('quality', isCoarse ? 'low' : 'high'); GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
+  GAME.quality = store.get('quality', 'high');
+  if (GAME.quality === 'ultra') GAME.quality = 'high';
+  GAME.tod = store.get('tod', 'auto'); GAME.minimapRotate = store.get('mm', 'rotate') === 'rotate'; GAME.assists = store.get('assist', 'on') === 'on'; GAME.brakeMode = store.get('brakeMode', 'progressive') === 'instant' ? 'instant' : 'progressive';
   applySettingsUI();
   try {
-    const fontLoads = document.fonts ? Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter'), document.fonts.ready]).catch(() => { }) : Promise.resolve();
-    await Promise.race([fontLoads, new Promise(r => setTimeout(r, 2500))]);
-    setProgress(0.08, 'Loading the city');
-    await initGame($('#gl'), setProgress);
+    const fontLoads = document.fonts ? Promise.race([
+      Promise.all([document.fonts.load('600 40px Teko'), document.fonts.load('700 40px Rajdhani', 'शतरंज सिटी VAJRA'), document.fonts.load('500 16px Inter')]),
+      new Promise(r => setTimeout(r, 60))
+    ]).catch(() => {}) : Promise.resolve();
+    setProgress(0.2, 'Loading the city');
+    await initGame($('#gl'), setProgress, fontLoads);
     buildMinimapBase(); startLoop(); booted = true;
+    setProgress(1, 'Ready');
     if (shouldReturnToRoad) {
       returnToRoad();
     } else {
-      $('#btnStart').disabled = false; $('#ldStatus').textContent = 'Ready when you are'; $('#btnStart').focus();
+      $('#btnStart').disabled = false;
+      $('#ldStatus').textContent = 'Starting...';
+      // Auto-enter immediately so the player never waits on the loading screen!
+      setTimeout(() => {
+        if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+          $('#btnStart').click();
+        }
+      }, 100);
     }
     $('#gl').addEventListener('webglcontextlost', e => { e.preventDefault(); openQuick(true); });
   } catch (err) {
@@ -195,8 +227,14 @@ async function boot() {
     setTimeout(() => openQuick(true), 900);
   }
 }
-$('#btnStart').onclick = () => { if (!booted) return; $('#loader').classList.add('hidden'); resize(); if (store.get('tour', '0') !== '1' && !GAME.reduced) beginTour(); else { GAME.beginIntro(); } };
+$('#btnStart').onclick = () => { if (!booted) return; if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); dismissLoader(() => { resize(); GAME.beginIntro(); }); };
 $('#btnQuick2').onclick = () => openQuick(!booted);
+$('#loader').addEventListener('click', (e) => {
+  if (e.target.closest('#btnQuick2')) return;
+  if (booted && !$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) {
+    $('#btnStart').click();
+  }
+});
 
 // ---------- tour ----------
 const TOUR_CAPS = [['Ancient Temple Complex', 'प्राचीन मंदिर परिसर'], ['Old City', 'पुराना शहर'], ['Victoria Bridge', 'विक्टोरिया पुल'], ['Modern Business District', 'व्यापार केंद्र']];
@@ -280,7 +318,7 @@ function buildSpeedo() {
     <g id="nitro" transform="translate(${cx - 44} ${cy - 44})"><path d="M8 2h8l-2 6h5l-9 12 2-8H7z" fill="#3B8FD8"/></g>
     <text id="boostPct" x="${cx - 20}" y="${cy - 29}" font-family="Rajdhani, sans-serif" font-weight="700" font-size="14" fill="#9fd0ff">100</text>`;
 }
-let mmBase, mapScale = 2; const MMR = 330;
+let mmBase, mapScale = 1.0; const MMR = 330;
 function buildMinimapBase() {
   mmBase = document.createElement('canvas'); mmBase.width = mmBase.height = MMR * 2 * mapScale; const x = mmBase.getContext('2d'); x.scale(mapScale, mapScale); x.translate(MMR, MMR);
   x.fillStyle = 'rgba(30,36,52,0.55)'; x.fillRect(-MMR, -MMR, MMR * 2, MMR * 2);
@@ -351,7 +389,7 @@ function buildQuick() {
 function openQuick(noGL) { lastFocus = document.activeElement; $('#quick').classList.remove('hidden'); $('#noglNote').classList.toggle('hidden', !noGL); $('#qDrive').classList.remove('hidden'); GAME.paused = true; $('#quick').scrollTop = 0; $('#qDrive').focus(); }
 function closeQuick() { $('#quick').classList.add('hidden'); GAME.paused = false; restoreFocus($('#quick')); }
 $('#btnQuick').onclick = () => openQuick(false);
-$('#qDrive').onclick = () => { closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden')) $('#btnStart').click(); } else { boot(); } };
+$('#qDrive').onclick = () => { if (window.__game && window.__game.enterGameMobile) window.__game.enterGameMobile(); closeQuick(); if (booted) { if (!$('#loader').classList.contains('hidden') && !$('#loader').classList.contains('fading')) $('#btnStart').click(); } else { boot(); } };
 $('#qResume').onclick = () => { const s = [...document.querySelectorAll('#qSections section')][3]; s && s.scrollIntoView({ behavior: GAME.reduced ? 'auto' : 'smooth' }); };
 
 // ---------- map ----------

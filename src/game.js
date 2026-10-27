@@ -290,7 +290,7 @@ class Particles {
   constructor(max, additive) { this.max = max; this.add = additive; this.n = 0; this.a = []; this.buf = new Float32Array(max * 6 * 9); this.mesh = dynMesh([[0, 3], [1, 2], [2, 4]]); }
   emit(o) { if (this.a.length >= this.max) this.a.shift(); this.a.push(Object.assign({ life: 1, age: 0, size: 0.5, grow: 0, drag: 1, g: 0, col: [1, 1, 1, 1], fade: 1 }, o)); }
   update(dt) { for (const p of this.a) { p.age += dt; p.vel[1] -= p.g * dt; const d = Math.exp(-p.drag * dt); p.vel[0] *= d; p.vel[1] *= d; p.vel[2] *= d; p.pos[0] += p.vel[0] * dt; p.pos[1] += p.vel[1] * dt; p.pos[2] += p.vel[2] * dt; if (p.pos[1] < 0.05 && p.g > 0) { p.pos[1] = 0.05; p.vel[1] *= -0.3; } p.size += p.grow * dt; } this.a = this.a.filter(p => p.age < p.life); }
-  build(R, U) { let k = 0; const b = this.buf; for (const p of this.a) { const t = p.age / p.life, al = p.col[3] * (p.fade ? (1 - t) * Math.min(1, t * 8 + 0.2) : 1), s = p.size / 2; const c = p.pos;
+  build(R, U) { if (!this.a.length) { this.mesh.count = 0; return; } let k = 0; const b = this.buf; for (const p of this.a) { const t = p.age / p.life, al = p.col[3] * (p.fade ? (1 - t) * Math.min(1, t * 8 + 0.2) : 1), s = p.size / 2; const c = p.pos;
       const corners = [[-1, -1, 0, 1], [1, -1, 1, 1], [1, 1, 1, 0], [-1, 1, 0, 0]];
       for (const i of [0, 1, 2, 0, 2, 3]) { const [sx, sy, u, v] = corners[i]; b[k++] = c[0] + (R[0] * sx + U[0] * sy) * s; b[k++] = c[1] + (R[1] * sx + U[1] * sy) * s; b[k++] = c[2] + (R[2] * sx + U[2] * sy) * s; b[k++] = u; b[k++] = v; b[k++] = p.col[0]; b[k++] = p.col[1]; b[k++] = p.col[2]; b[k++] = al; } }
     uploadDyn(this.mesh, b, this.a.length * 6); }
@@ -478,85 +478,56 @@ function initEcosystem() {
   DRAGONS.length = 0;
 
   const dragonConfigs = [
-    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - fast agile diagonal Figure-8 interceptor
+    // 1. Midnight Dark Blue Ice Dragon: Agile Sky Scout (Emits DARK BLUE ICE breath) - inner sky circular orbit
     { id: 'obsidian', element: 'ice',
       bodyMesh: 'dragon_body_obsidian', headMesh: 'dragon_head_obsidian',
       tail1Mesh: 'dragon_tail1_obsidian', tail2Mesh: 'dragon_tail2_obsidian',
       wingL: 'dragonWingL_obsidian', wingR: 'dragonWingR_obsidian', mesh: 'dragon_obsidian',
-      x: -40, y: 385, z: 80, cruiseSpeed: 55, turnAgility: 1.8, bankFactor: 3.2, flapSpeedBase: 3.8, tailFreq: 4.8, scale: 19.5, wpIdx: 0,
-      waypoints: [
-        { x: -290, z: -280, alt: 385, desc: 'Northwest Bastion High Stratosphere' },
-        { x: -70, z: -90, alt: 375, desc: 'Old City Diagonal Cross' },
-        { x: 140, z: 50, alt: 390, desc: 'Bridge High Crossing' },
-        { x: 290, z: 270, alt: 410, desc: 'Southeast Delta Outer High' },
-        { x: 270, z: -80, alt: 395, desc: 'East Galleria High Sky' },
-        { x: 70, z: 230, alt: 380, desc: 'South Promenade Stratosphere' },
-        { x: -190, z: 220, alt: 390, desc: 'Southwest Market High' },
-        { x: -290, z: 50, alt: 405, desc: 'West Ridge High Sky' }
-      ] },
-    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - massive outer mountain perimeter orbit
+      cx: 0, cz: -10, radius: 95, orbitSpeed: 0.16, dir: 1, baseAlt: 48, altAmp: 4, altFreq: 0.32, phaseOffset: 0.0,
+      flapSpeedBase: 3.2, tailFreq: 4.2, scale: 3.5 },
+    // 2. Crimson Red Fire Dragon: Heavy Molten Wyrm (Emits RED FIRE breath) - counter-clockwise circular orbit in sky
     { id: 'volcanic', element: 'fire',
       bodyMesh: 'dragon_body_volcanic', headMesh: 'dragon_head_volcanic',
       tail1Mesh: 'dragon_tail1_volcanic', tail2Mesh: 'dragon_tail2_volcanic',
       wingL: 'dragonWingL_volcanic', wingR: 'dragonWingR_volcanic', mesh: 'dragon_volcanic',
-      x: 60, y: 415, z: 20, cruiseSpeed: 34, turnAgility: 0.95, bankFactor: 1.4, flapSpeedBase: 1.6, tailFreq: 2.2, scale: 21.0, wpIdx: 0,
-      waypoints: [
-        { x: 330, z: -300, alt: 420, desc: 'Northeast Outer Mountain Ridge' },
-        { x: 90, z: -330, alt: 435, desc: 'North Citadel Far Horizon' },
-        { x: -260, z: -270, alt: 415, desc: 'Northwest Cloudfront Perimeter' },
-        { x: -330, z: 80, alt: 405, desc: 'West Mountain Divide' },
-        { x: -200, z: 310, alt: 430, desc: 'Southwest Horizon Ridge' },
-        { x: 110, z: 320, alt: 425, desc: 'South Boundary High Sky' },
-        { x: 320, z: 140, alt: 440, desc: 'East Sky Horizon' },
-        { x: 230, z: -140, alt: 430, desc: 'Cyber-East Ridge' }
-      ] },
-    // 3. Deep Sapphire Dark Blue Ice Dragon: River & Canyon Explorer (Emits DARK BLUE ICE breath) - sinuous S-curve canyon & cloud traverse
+      cx: 0, cz: -10, radius: 125, orbitSpeed: 0.125, dir: -1, baseAlt: 56, altAmp: 5, altFreq: 0.28, phaseOffset: 1.8,
+      flapSpeedBase: 1.8, tailFreq: 2.4, scale: 4.0 },
+    // 3. Deep Sapphire Dark Blue Ice Dragon: High Cloud Navigator (Emits DARK BLUE ICE breath) - wide clockwise circular orbit
     { id: 'jade', element: 'ice',
       bodyMesh: 'dragon_body_jade', headMesh: 'dragon_head_jade',
       tail1Mesh: 'dragon_tail1_jade', tail2Mesh: 'dragon_tail2_jade',
       wingL: 'dragonWingL_jade', wingR: 'dragonWingR_jade', mesh: 'dragon_jade',
-      x: -80, y: 395, z: -50, cruiseSpeed: 42, turnAgility: 1.45, bankFactor: 2.3, flapSpeedBase: 2.6, tailFreq: 3.8, scale: 20.0, wpIdx: 0,
-      waypoints: [
-        { x: -340, z: 140, alt: 395, desc: 'Far West River Delta' },
-        { x: -160, z: 40, alt: 385, desc: 'West River Rapids Sky' },
-        { x: 10, z: 20, alt: 390, desc: 'Vajra Setu High Stratosphere' },
-        { x: 210, z: 30, alt: 405, desc: 'East River Canyon High' },
-        { x: 340, z: 200, alt: 425, desc: 'Far East River Delta' },
-        { x: 210, z: -240, alt: 415, desc: 'North Approach Ridge' },
-        { x: -120, z: -290, alt: 400, desc: 'Old City High Crest' },
-        { x: -310, z: -110, alt: 390, desc: 'West Ridge Sky Pass' }
-      ] },
-    // 4. Scarlet Red Fire Dragon: Sky Sovereign (Emits RED FIRE breath) - apex stratospheric 4-leaf cloverleaf / rosette orbit
+      cx: 0, cz: -10, radius: 155, orbitSpeed: 0.10, dir: 1, baseAlt: 64, altAmp: 5, altFreq: 0.24, phaseOffset: 3.6,
+      flapSpeedBase: 2.4, tailFreq: 3.4, scale: 4.2 },
+    // 4. Scarlet Red Fire Dragon: Celestial Sky Sovereign (Emits RED FIRE breath) - apex sky circular orbit
     { id: 'gold', element: 'fire',
       bodyMesh: 'dragon_body_gold', headMesh: 'dragon_head_gold',
       tail1Mesh: 'dragon_tail1_gold', tail2Mesh: 'dragon_tail2_gold',
       wingL: 'dragonWingL_gold', wingR: 'dragonWingR_gold', mesh: 'dragon_gold',
-      x: 40, y: 465, z: -100, cruiseSpeed: 46, turnAgility: 1.15, bankFactor: 1.9, flapSpeedBase: 1.3, tailFreq: 2.4, scale: 23.0, wpIdx: 0,
-      waypoints: [
-        { x: 0, z: -330, alt: 480, desc: 'Apex North Sky Leaf' },
-        { x: 310, z: -190, alt: 465, desc: 'Apex Northeast Sky' },
-        { x: 340, z: 90, alt: 475, desc: 'Apex East Sky Leaf' },
-        { x: 240, z: 320, alt: 460, desc: 'Apex Southeast Sky' },
-        { x: -90, z: 330, alt: 470, desc: 'Apex South Sky Leaf' },
-        { x: -330, z: 180, alt: 485, desc: 'Apex Southwest Sky' },
-        { x: -340, z: -160, alt: 475, desc: 'Apex Northwest Sky Leaf' },
-        { x: 0, z: 0, alt: 495, desc: 'Supreme Celestial Zenith' }
-      ] }
+      cx: 0, cz: -10, radius: 185, orbitSpeed: 0.082, dir: -1, baseAlt: 72, altAmp: 6, altFreq: 0.20, phaseOffset: 5.2,
+      flapSpeedBase: 1.4, tailFreq: 2.2, scale: 4.8 }
   ];
   for (const dc of dragonConfigs) {
     const initBreathT = dc.id === 'volcanic' ? 0.2 : dc.id === 'gold' ? 2.4 : dc.id === 'obsidian' ? 1.2 : 3.6;
-    const pts = dc.waypoints || DRAGON_ROAM_POINTS;
-    const wp = pts[dc.wpIdx % pts.length];
-    const initYaw = Math.atan2(-(wp.x - dc.x), -(wp.z - dc.z));
+    const a = dc.phaseOffset || 0;
+    const initX = dc.cx + dc.radius * Math.cos(a);
+    const initZ = dc.cz + dc.radius * Math.sin(a);
+    const initY = dc.baseAlt + Math.sin(a * dc.altFreq) * dc.altAmp;
+    const vx = -Math.sin(a) * dc.dir;
+    const vz = Math.cos(a) * dc.dir;
+    const initYaw = Math.atan2(-vx, -vz);
     DRAGONS.push({
       ...dc,
+      x: initX,
+      y: initY,
+      z: initZ,
+      orbitAngle: a,
       wingPh: Math.random() * 6.28,
       flightT: Math.random() * 200,
       breathT: initBreathT,
-      wpTimer: 12 + Math.random() * 6,
       yaw: initYaw,
       pitch: 0,
-      roll: 0,
+      roll: -dc.dir * 0.28,
       smoothFlap: 0,
       smoothPitch: 0,
       smoothSweep: 0,
@@ -580,15 +551,13 @@ function routeTo(tx, tz) {
 }
 
 // ---------- init ----------
-async function initGame(canvas, onProgress) {
+async function initGame(canvas, onProgress, fontLoads) {
   if (!canvas) throw new Error('canvas element not found');
   const glConfigs = [
-    { powerPreference: 'high-performance', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { powerPreference: 'default', preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { antialias: false, alpha: false, preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-    { preserveDrawingBuffer: true },
-    { antialias: false, alpha: false, preserveDrawingBuffer: true }
+    { powerPreference: 'high-performance', antialias: false, alpha: false, depth: true, stencil: false, failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false },
+    { powerPreference: 'default', failIfMajorPerformanceCaveat: false },
+    { antialias: false, alpha: false }
   ];
   for (const cfg of glConfigs) {
     try {
@@ -607,16 +576,19 @@ async function initGame(canvas, onProgress) {
   if (!gl) throw new Error('nowebgl2');
   P.main = compile(SH.mainVS, SH.mainFS); P.tex = compile(SH.texVS, SH.texFS); P.flat = compile(SH.flatVS, SH.flatFS); P.part = compile(SH.partVS, SH.partFS);
   P.sky = compile(SH.skyVS, SH.skyFS); P.bright = compile(SH.quadVS, SH.brightFS); P.blur = compile(SH.quadVS, SH.blurFS); P.comp = compile(SH.quadVS, SH.compFS);
-  onProgress(0.15, 'Compiling shaders');
-  await new Promise(r => setTimeout(r, 30));
+  onProgress(0.25, 'Compiling shaders');
+  await new Promise(r => setTimeout(r, 0));
+
   const rng = mulberry(20260923);
-  const G = buildWorld(rng); onProgress(0.5, 'Raising Shatranj City');
-  await new Promise(r => setTimeout(r, 30));
+  const G = buildWorld(rng);
+  onProgress(0.55, 'Raising Shatranj City');
+  await new Promise(r => setTimeout(r, 0));
+
   statics = chunkGeo(G, 110);
   initVehicleMeshes();
   MESH.water = geoToMesh(buildWaterGeo());
-    MESH.speechBubble = geoToMesh(buildSpeechBubble());
-    MESH.pedArchs = [];
+  MESH.speechBubble = geoToMesh(buildSpeechBubble());
+  MESH.pedArchs = [];
   for (let a = 0; a < 6; a++) {
     const parts = buildPedArchetype(a, a);
     MESH.pedArchs.push({
@@ -633,7 +605,8 @@ async function initGame(canvas, onProgress) {
   }
   MESH.peds = MESH.pedArchs.map(a => a.body);
   MESH.pin = geoToMesh(buildPin());
-  onProgress(0.7, 'Tuning the VAJRA-S1');
+  onProgress(0.78, 'Tuning the VAJRA-S1');
+
   // quads + flat meshes
   QUAD = (() => { const vao = gl.createVertexArray(); gl.bindVertexArray(vao); const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0, 0, 1, 0.5, -0.5, 0, 1, 1, 0.5, 0.5, 0, 1, 0, -0.5, -0.5, 0, 0, 1, 0.5, 0.5, 0, 1, 0, -0.5, 0.5, 0, 0, 0]), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 20, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12); gl.bindVertexArray(null); return { vao }; })();
   MESH.ring = staticFlat(ringVerts(7.6, 8.8, 64, [1, 1, 1, 1]).concat(ringVerts(0, 8.8, 64, [1, 1, 1, 0.18])));
@@ -641,6 +614,10 @@ async function initGame(canvas, onProgress) {
   MESH.marks = dynMesh([[0, 3], [1, 4]]); MESH.marksBuf = new Float32Array(420 * 6 * 7); MESH.marksN = 0; MESH.marksHead = 0;
   MESH.trail = dynMesh([[0, 3], [1, 4]]); MESH.trailBuf = new Float32Array(6 * 30 * 6 * 7);
   MESH.gps = dynMesh([[0, 3], [1, 4]]); MESH.gpsBuf = new Float32Array(40 * 9 * 7);
+
+  onProgress(0.88, 'Lighting the lanterns');
+  if (fontLoads) await Promise.race([fontLoads, new Promise(r => setTimeout(r, 100))]);
+
   // textures
   for (const s of W.signs) s.tex = texFromCanvas(s.cv);
   TEX.labels = {}; for (const lm of W.landmarks) TEX.labels[lm.id] = texFromCanvas(labelCanvas(lm));
@@ -649,7 +626,7 @@ async function initGame(canvas, onProgress) {
   TEX.plate = texFromCanvas(textCanvas(256, 64, (x, w, h) => { x.fillStyle = '#F4F1EA'; x.fillRect(0, 0, w, h); x.strokeStyle = '#17181C'; x.lineWidth = 4; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = '#17181C'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 44px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 4); }));
   TEX.decal = texFromCanvas(textCanvas(512, 96, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = '#E8892B'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `italic 700 72px ${FONT_D}`; x.fillText('VAJRA-S1', w / 2, h / 2 + 6); }));
   const lm = W.landmarks.find(l => l.id === 'resume'); TEX.boardCv = document.createElement('canvas'); TEX.boardCv.width = 1024; TEX.boardCv.height = 474; drawBoard(TEX.boardCv, 1); TEX.board = texFromCanvas(TEX.boardCv); lm.boardFlip = -1;
-  onProgress(0.9, 'Lighting the lanterns');
+
   initTraffic(rng); initEcosystem();
   GAME.mood = moodVec(MOODS.golden);
   resize(); addEventListener('resize', resize);
@@ -671,16 +648,24 @@ function frustumPlanes(m) { const r = i => [m[i], m[4 + i], m[8 + i], m[12 + i]]
 function boxVisible(P, mn, mx) { for (const p of P) { if (p[0] * (p[0] > 0 ? mx[0] : mn[0]) + p[1] * (p[1] > 0 ? mx[1] : mn[1]) + p[2] * (p[2] > 0 ? mx[2] : mn[2]) + p[3] < 0) return false; } return true; }
 const IDENT = M4.ident(), _M = new Float32Array(16);
 function resize() {
-  const cv = gl.canvas, dpr = Math.min(devicePixelRatio || 1, GAME.quality === 'high' ? 1.5 : 1.25) * (GAME.renderScale || 1);
-  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr)); cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
-  if (GAME.quality === 'high') setupTargets(cv.width, cv.height); else { if (RT.del) RT.del(); RT.ok = false; }
+  const cv = gl.canvas;
+  const isHigh = GAME.quality === 'high' || GAME.quality === 'ultra';
+  const targetDpr = isHigh ? Math.min(devicePixelRatio || 1, 1.35) : 1.0;
+  const dpr = Math.max(1, targetDpr * (GAME.renderScale || 1));
+  cv.width = Math.max(2, Math.floor(cv.clientWidth * dpr));
+  cv.height = Math.max(2, Math.floor(cv.clientHeight * dpr));
+  if (isHigh) setupTargets(cv.width, cv.height);
+  else { if (RT.del) RT.del(); RT.ok = false; }
 }
 
 // ---------- textures for landmarks ----------
 function labelCanvas(lm) { return textCanvas(1024, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `600 150px ${FONT_D}`; x.lineWidth = 16; x.strokeStyle = 'rgba(10,14,30,0.75)'; x.strokeText(lm.name.toUpperCase(), w / 2, h / 2 + 18); x.fillStyle = '#ffffff'; x.fillText(lm.name.toUpperCase(), w / 2, h / 2 + 18); x.fillStyle = lm.color; x.fillRect(w / 2 - 120, h - 30, 240, 10); }); }
 async function holoCanvas(cs, i) {
   const cover = cs.cover ? await loadCaseStudyCover(cs.cover) : null;
-  return textCanvas(1024, 2048, (x, w, h) => {
+  return textCanvas(512, 1024, (x) => {
+    x.save();
+    x.scale(0.5, 0.5);
+    const w = 1024, h = 2048;
     // 1. Deep midnight glass obsidian background
     x.fillStyle = '#050914';
     x.fillRect(0, 0, w, h);
@@ -923,17 +908,16 @@ async function holoCanvas(cs, i) {
 
     x.fillStyle = '#94A3B8'; x.font = `700 24px ${FONT_D}`; x.textAlign = 'center';
     x.fillText('SHATRANJ CITY · CYBER-CHOWK INTERCHANGE · CASE STUDY 0' + (i + 1) + ' OF 03', w / 2, 2012);
+    x.restore();
   });
 }
 function loadCaseStudyCover(path) {
   return new Promise((resolve) => {
     if (!path) { resolve(null); return; }
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => {
-      console.warn('Cover image at ' + path + ' could not be loaded, using stylized fallback.');
-      resolve(null);
-    };
+    const timer = setTimeout(() => resolve(null), 100);
+    image.onload = () => { clearTimeout(timer); resolve(image); };
+    image.onerror = () => { clearTimeout(timer); resolve(null); };
     try {
       if (path.startsWith('data:')) {
         image.src = path;
@@ -941,12 +925,16 @@ function loadCaseStudyCover(path) {
         image.src = new URL(path, document.baseURI).href;
       }
     } catch {
+      clearTimeout(timer);
       resolve(null);
     }
   });
 }
 function holoBackCanvas() {
-  return textCanvas(1024, 2048, (x, w, h) => {
+  return textCanvas(512, 1024, (x) => {
+    x.save();
+    x.scale(0.5, 0.5);
+    const w = 1024, h = 2048;
     // Solid dark titanium armor chassis
     x.fillStyle = '#060a14';
     x.fillRect(0, 0, w, h);
@@ -1014,6 +1002,7 @@ function holoBackCanvas() {
     x.fillText('FIBER BACKHAUL · ULTRA-HD FEED ACTIVE', w / 2, h - 138);
     x.fillStyle = '#38BDF8'; x.font = `700 22px ${FONT_D}`;
     x.fillText('60 FPS // 4K REFRESH // DRIVE TO FRONT TO INTERACT', w / 2, h - 106);
+    x.restore();
   });
 }
 function wrap(x, text, px, py, maxW, lh, maxL) { const words = String(text).split(' '); let line = '', n = 0; for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (x.measureText(t).width > maxW && line) { x.fillText(line, px, py); py += lh; line = wd; if (++n >= maxL) return; } else line = t; } if (line) x.fillText(line, px, py); }
@@ -1405,56 +1394,42 @@ function updateWorld(dt) {
     b.y = (b.baseY || 35) + Math.sin(b.waveT + (b.wavePh || 0)) * (b.waveAmp || 1.8);
   }
 
-  // Update 4 majestic flying dragons with dynamic roaming AI ("here and there" across Shatranj City)
+  // Update 4 majestic flying dragons rotating continuously in the sky of Shatranj City
   for (const d of DRAGONS) {
     d.flightT = (d.flightT || 0) + dt;
     const t = d.flightT;
 
-    // Dynamic city-wide continuous roaming waypoint flight AI
-    const pts = d.waypoints || DRAGON_ROAM_POINTS;
-    const curWp = pts[d.wpIdx % pts.length];
-    const dx = curWp.x - d.x;
-    const dz = curWp.z - d.z;
-    const dy = curWp.alt - d.y;
-    const distHoriz = Math.hypot(dx, dz);
+    // Advance orbital rotation angle around Shatranj City sky
+    d.orbitAngle = (d.orbitAngle || d.phaseOffset || 0) + d.dir * d.orbitSpeed * dt;
+    const a = d.orbitAngle;
 
-    d.wpTimer = (d.wpTimer || 16) - dt;
-    // When arriving near waypoint or after duration, advance continuously to the next waypoint
-    if (distHoriz < 45 || d.wpTimer <= 0) {
-      d.wpIdx = (d.wpIdx + 1) % pts.length;
-      d.wpTimer = 16 + Math.random() * 8;
-    }
+    // Pure circular path roaming in the high sky over Shatranj City
+    const targetX = d.cx + d.radius * Math.cos(a);
+    const targetZ = d.cz + d.radius * Math.sin(a);
+    const vertWave = Math.sin(t * d.altFreq + (d.phaseOffset || 0));
+    const targetY = d.baseAlt + vertWave * d.altAmp;
 
-    // Desired heading to target
-    let desiredYaw = Math.atan2(-dx, -dz);
-    // Soft map boundary rebound (steers back inward if ever past outer horizon)
-    if (Math.hypot(d.x, d.z) > 420) {
-      desiredYaw = Math.atan2(-d.x, -d.z);
-    }
+    // Direct circular flight positioning high in the sky
+    d.x = targetX;
+    d.y = targetY;
+    d.z = targetZ;
 
-    // Smooth aerodynamic turn steering tailored to each dragon's agility
-    const yawDiff = angDiff(d.yaw || 0, desiredYaw);
-    const maxTurnRate = (d.turnAgility || 1.25) * dt;
-    d.yaw = (d.yaw || 0) + clamp(yawDiff, -maxTurnRate, maxTurnRate);
+    // Exact forward velocity vector along the circular orbit
+    const vx = -Math.sin(a) * d.dir;
+    const vz = Math.cos(a) * d.dir;
 
-    // Unique banking physics for each dragon's weight and wingspan
-    const targetRoll = clamp(-yawDiff * (d.bankFactor || 2.2), -0.78, 0.78);
-    d.roll = damp(d.roll || 0, targetRoll, 3.8, dt);
+    // Forward heading: points strictly forward along flight trajectory (head leading forward)
+    const forwardYaw = Math.atan2(-vx, -vz);
+    d.yaw = forwardYaw;
 
-    // Dynamic pitch tracking target altitude with vertical climbing & diving
-    const desiredPitch = clamp(-dy / Math.max(30, distHoriz) * 1.0, -0.42, 0.42);
-    d.pitch = damp(d.pitch || 0, desiredPitch, 2.4, dt);
+    // Natural aerodynamic banking: leaning inward into the circular turn
+    const targetRoll = -d.dir * 0.28;
+    d.roll = damp(d.roll || 0, targetRoll, 4.0, dt);
 
-    // Physical forward motion along 3D velocity vector
-    const speed = d.cruiseSpeed || 36;
-    const horizSpeed = speed * Math.cos(d.pitch);
-    const vx = -Math.sin(d.yaw) * horizSpeed;
-    const vz = -Math.cos(d.yaw) * horizSpeed;
-    const vy = -Math.sin(d.pitch) * speed;
-
-    d.x += vx * dt;
-    d.y += vy * dt;
-    d.z += vz * dt;
+    // Aerodynamic vertical pitch matching undulating climb / dive
+    const vertRate = Math.cos(t * d.altFreq + (d.phaseOffset || 0)) * d.altAmp * d.altFreq;
+    const targetBodyPitch = clamp(-vertRate * 0.08, -0.22, 0.22);
+    d.pitch = damp(d.pitch || 0, targetBodyPitch, 3.5, dt);
 
     // Unique continuous glide & flap personality (agile scout vs heavy wyrm vs river serpent vs soaring sovereign)
     const cycle = d.id === 'gold' ? Math.sin(t * 0.28) : Math.sin(t * 0.45 + (d.id === 'volcanic' ? 1.6 : d.id === 'jade' ? 3.2 : 0));
@@ -1495,7 +1470,7 @@ function updateWorld(dt) {
 
     // Lifelike dragon head movement: scanning landscape, anticipating turns, tilting up proudly to roar
     const headScan = Math.sin(t * 0.7 + (d.id === 'volcanic' ? 1.2 : d.id === 'jade' ? 2.8 : 0)) * 0.18;
-    const turnLead = clamp(-yawDiff * 0.7, -0.32, 0.32);
+    const turnLead = -d.dir * 0.18;
     d.headYaw = damp(d.headYaw || 0, headScan + turnLead, 3.5, dt);
 
     const roarTilt = isBreathing ? -0.16 : 0.0;
@@ -1505,110 +1480,69 @@ function updateWorld(dt) {
 
     // Unique aerodynamic serpentine tail movement tuned to each dragon's mass & frequency
     const tailSpeed = d.tailFreq || 3.2;
-    const turnSway = clamp(yawDiff * 1.8, -0.45, 0.45);
+    const turnSway = d.dir * 0.28;
     d.tailYaw1 = Math.sin(t * tailSpeed) * 0.14 - turnSway * 0.40;
     d.tailPitch1 = -Math.cos(t * tailSpeed * 0.5) * 0.07 + (d.glideWeight > 0.5 ? 0.03 : -0.05);
 
     d.tailYaw2 = Math.sin(t * tailSpeed - 1.1) * 0.28 - turnSway * 0.75;
     d.tailPitch2 = -Math.cos(t * tailSpeed * 0.5 - 0.8) * 0.12;
 
-    // Dynamic head and mouth matrix: breath torrents shoot directly from articulated jaws!
-    const dragonM = M4.model(d.x, d.y, d.z, d.yaw, d.pitch, d.roll, d.scale, d.scale, d.scale);
-    const MHead = M4.mul(dragonM, M4.model(0, 0.28, -1.8, d.headYaw, d.headPitch, d.headRoll));
-    const mouthPos = M4.xf(MHead, [0, 0.85, -2.85]);
-    const fwdPt = M4.xf(MHead, [0, 0.85, -5.5]);
-    const fwdDir = V3.norm(V3.sub(fwdPt, mouthPos));
-
-    if (isBreathing && FX) {
+    d.breathEmitT = (d.breathEmitT || 0) + dt;
+    if (isBreathing && FX && d.breathEmitT >= 0.09) {
+      d.breathEmitT = 0;
+      // Dynamic head and mouth matrix: breath torrents shoot directly from articulated jaws!
+      const dragonM = M4.model(d.x, d.y, d.z, d.yaw, d.pitch, d.roll, d.scale, d.scale, d.scale);
+      const MHead = M4.mul(dragonM, M4.model(0, 0.28, -1.8, d.headYaw, d.headPitch, d.headRoll));
+      const mouthPos = M4.xf(MHead, [0, 0.85, -2.85]);
+      const fwdPt = M4.xf(MHead, [0, 0.85, -5.5]);
+      const fwdDir = V3.norm(V3.sub(fwdPt, mouthPos));
       if (d.element === 'fire') {
         // FIRE DRAGON BREATH (Both Dragons are radiant blazing RED)
-        for (let k = 0; k < 2; k++) {
-          const spd = 34 + Math.random() * 18 * bInt;
-          const spread = (Math.random() - 0.5) * 4.5;
-          const spreadY = (Math.random() - 0.5) * 3.5;
-          const vx = fwdDir[0] * spd + spread;
-          const vy = fwdDir[1] * spd + spreadY + 1.2;
-          const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 4.5;
-          
-          // Pure blazing red flame torrent (FX.add)
-          if (FX.add) {
-            const col = [1.0, 0.05 + Math.random() * 0.14, 0.04, 0.98];
-            FX.add.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
-              vel: [vx, vy, vz],
-              life: 1.35 + Math.random() * 0.45,
-              size: 1.2 * d.scale * 0.35,
-              grow: 5.8 * d.scale * 0.35,
-              drag: 1.08,
-              g: -1.2,
-              col: col
-            });
-            // Brilliant fiery red core sparks
-            if (Math.random() < 0.65) {
-              FX.add.emit({
-                pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
-                vel: [vx * 1.15, vy * 1.15, vz * 1.15],
-                life: 0.85 + Math.random() * 0.35,
-                size: 0.75, grow: 1.8, drag: 1.05,
-                col: [1.0, 0.45 + Math.random() * 0.35, 0.20, 1.0]
-              });
-            }
-          }
-          // Billowing dark crimson flame smoke (FX.alpha)
-          if (FX.alpha && Math.random() < 0.60) {
-            FX.alpha.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 2.0, mouthPos[1], mouthPos[2] + (Math.random() - 0.5) * 2.0],
-              vel: [vx * 0.75, vy * 0.75 + 1.8, vz * 0.75],
-              life: 1.6 + Math.random() * 0.5,
-              size: 1.5, grow: 6.2, drag: 1.10, g: -1.8,
-              col: [0.36, 0.06, 0.06, 0.48 * bInt]
-            });
-          }
+        const spd = 42 + Math.random() * 20 * bInt;
+        const vx = fwdDir[0] * spd + (Math.random() - 0.5) * 3.5;
+        const vy = fwdDir[1] * spd + (Math.random() - 0.5) * 2.5 + 1.2;
+        const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 3.5;
+
+        if (FX.add) {
+          FX.add.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx, vy, vz],
+            life: 1.25 + Math.random() * 0.35,
+            size: 1.3 * d.scale * 0.35,
+            grow: 5.5 * d.scale * 0.35,
+            drag: 1.08,
+            g: -1.2,
+            col: [1.0, 0.08 + Math.random() * 0.14, 0.04, 0.98]
+          });
+        }
+        if (FX.alpha && Math.random() < 0.45) {
+          FX.alpha.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx * 0.7, vy * 0.7 + 1.5, vz * 0.7],
+            life: 1.4 + Math.random() * 0.4,
+            size: 1.8, grow: 6.5, drag: 1.10, g: -1.8,
+            col: [0.36, 0.06, 0.06, 0.42 * bInt]
+          });
         }
       } else if (d.element === 'ice') {
         // ICE DRAGON BREATH (Dark Blue Glacial Frost Wyrms)
-        for (let k = 0; k < 2; k++) {
-          const spd = 30 + Math.random() * 16 * bInt;
-          const swirlA = d.breathT * 12 + Math.random() * 6.28;
-          const swirlR = 2.4;
-          const vx = fwdDir[0] * spd + Math.cos(swirlA) * swirlR;
-          const vy = fwdDir[1] * spd + Math.sin(swirlA) * swirlR - 0.8;
-          const vz = fwdDir[2] * spd + (Math.random() - 0.5) * swirlR;
-          
-          // Deep dark blue / sapphire glacial ice crystal shards (FX.add)
-          if (FX.add) {
-            const col = [0.12, 0.45 + Math.random() * 0.35, 1.0, 0.98];
-            FX.add.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.5, mouthPos[1] + (Math.random() - 0.5) * 1.2, mouthPos[2] + (Math.random() - 0.5) * 1.5],
-              vel: [vx, vy, vz],
-              life: 1.40 + Math.random() * 0.45,
-              size: 1.1 * d.scale * 0.35,
-              grow: 5.2 * d.scale * 0.35,
-              drag: 1.06,
-              g: 1.5,
-              col: col
-            });
-            // Diamond frost needle glints
-            if (Math.random() < 0.70) {
-              FX.add.emit({
-                pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
-                vel: [vx * 1.1, vy * 1.1, vz * 1.1],
-                life: 0.95 + Math.random() * 0.40,
-                size: 0.65, grow: 1.5, drag: 1.04,
-                col: [0.70, 0.90, 1.0, 1.0]
-              });
-            }
-          }
-          // Freezing dark blue arctic blizzard fog (FX.alpha)
-          if (FX.alpha && Math.random() < 0.65) {
-            FX.alpha.emit({
-              pos: [mouthPos[0] + (Math.random() - 0.5) * 1.8, mouthPos[1], mouthPos[2] + (Math.random() - 0.5) * 1.8],
-              vel: [vx * 0.78, vy * 0.78, vz * 0.78],
-              life: 1.7 + Math.random() * 0.5,
-              size: 1.6, grow: 5.8, drag: 1.08, g: 1.0,
-              col: [0.20, 0.50, 0.92, 0.52 * bInt]
-            });
-          }
+        const spd = 38 + Math.random() * 18 * bInt;
+        const swirlA = d.breathT * 10 + Math.random() * 6.28;
+        const vx = fwdDir[0] * spd + Math.cos(swirlA) * 2.0;
+        const vy = fwdDir[1] * spd + Math.sin(swirlA) * 2.0 - 0.8;
+        const vz = fwdDir[2] * spd + (Math.random() - 0.5) * 2.0;
+
+        if (FX.add) {
+          FX.add.emit({
+            pos: [mouthPos[0], mouthPos[1], mouthPos[2]],
+            vel: [vx, vy, vz],
+            life: 1.25 + Math.random() * 0.35,
+            size: 1.2 * d.scale * 0.35,
+            grow: 5.0 * d.scale * 0.35,
+            drag: 1.06,
+            g: 1.5,
+            col: [0.12, 0.48 + Math.random() * 0.35, 1.0, 0.98]
+          });
         }
       }
     }
@@ -1687,9 +1621,9 @@ function updateWorld(dt) {
 const CAMFX = { tour: null, orbit: null, hero: null };
 // camera rigs: chase distances, heights and look-ahead per mode
 const CAM_MODES = {
-  chase: { name: 'Chase', dist: 6.6, h: 1.95, look: 5, lookY: 0.95, lag: 0.15, fov: 0 },
-  close: { name: 'Close chase', dist: 4.7, h: 1.35, look: 6, lookY: 0.85, lag: 0.13, fov: 4 },
-  far: { name: 'Far chase', dist: 10.5, h: 3.6, look: 4, lookY: 0.9, lag: 0.22, fov: -2 },
+  chase: { name: 'Chase', dist: 6.6, h: 1.95, look: 5, lookY: 1.35, lag: 0.15, fov: 0 },
+  close: { name: 'Close chase', dist: 4.7, h: 1.35, look: 6, lookY: 1.15, lag: 0.13, fov: 4 },
+  far: { name: 'Far chase', dist: 10.5, h: 3.6, look: 4, lookY: 1.25, lag: 0.22, fov: -2 },
   hood: { name: 'Hood', hood: true, fov: 12 },
   drone: { name: 'Top-down', dist: 15, h: 24, look: 3, lookY: 0, lag: 0.32, fov: -6 }
 };
@@ -1776,7 +1710,7 @@ function render() {
   const near = GAME.camMode === 'hood' && GAME.phase === 'driving' ? 0.12 : 0.5, proj = M4.persp(fovY, asp, near, 1500), view = M4.lookAt(eye, cam.look, [0, 1, 0]), vp = M4.mul(proj, view), ivp = M4.inv(vp);
   GAME.lastVP = vp; GAME.lastView = view;
   const R = [view[0], view[4], view[8]], U = [view[1], view[5], view[9]];
-  const useRT = RT.ok && GAME.quality === 'high';
+  const useRT = RT.ok && (GAME.quality === 'high' || GAME.quality === 'ultra');
   gl.bindFramebuffer(gl.FRAMEBUFFER, useRT ? RT.ms : null); gl.viewport(0, 0, w, h);
   gl.clearColor(m.fogCol[0], m.fogCol[1], m.fogCol[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.disable(gl.CULL_FACE); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
@@ -1822,11 +1756,12 @@ function render() {
   for (const [wx, wz, left, front] of [[-0.92, -1.45, 1, 1], [0.92, -1.45, 0, 1], [-0.92, 1.35, 1, 0], [0.92, 1.35, 0, 0]]) { const st = front ? c.steer : 0; const wm = M4.mul(carM, M4.model(wx, 0.36, wz, st + (left ? Math.PI : 0), left ? -c.spin : c.spin, 0)); drawMesh(u, MESH.wheel, wm); } gl.uniform1f(u.u_fill, 0);
   if (GAME.drawCarLights) GAME.drawCarLights(u, carM);
   if (GAME.lightUniforms) GAME.lightUniforms(u, carM);
-  for (const t of TRAFFIC) { if (Math.abs(t.x - cam.pos[0]) > 420 || Math.abs(t.z - cam.pos[2]) > 420) continue; drawMesh(u, MESH[t.mesh], M4.model(t.x, t.y, t.z, t.yaw, 0, 0, 1, 1, 1, _M), [1, 1, 1], 1 + t.brake * 0.9); }
+  for (const t of TRAFFIC) { if (Math.abs(t.x - cam.pos[0]) > 180 || Math.abs(t.z - cam.pos[2]) > 180) continue; drawMesh(u, MESH[t.mesh], M4.model(t.x, t.y, t.z, t.yaw, 0, 0, 1, 1, 1, _M), [1, 1, 1], 1 + t.brake * 0.9); }
   drawTrains(u);
   if (typeof drawTrafficLights === 'function') drawTrafficLights(u);
     for (const p of PEDS) {
-    if (Math.hypot(p.x - cam.pos[0], p.z - cam.pos[2]) > 160) continue;
+    const pedDist = Math.hypot(p.x - cam.pos[0], p.z - cam.pos[2]);
+    if (pedDist > 75) continue;
     const arch = (MESH.pedArchs && MESH.pedArchs[p.v % MESH.pedArchs.length]) || { body: MESH.peds[p.v % MESH.peds.length] };
 
     // Human bipedal locomotion & organic idle kinematics
@@ -1974,6 +1909,16 @@ function render() {
     const bodyM = M4.model(p.x, bodyBob, p.z, p.yaw + bodyYaw, bodyPitch, bodyRoll);
     drawMesh(u, arch.body, bodyM);
 
+    if (pedDist > 35) {
+      // Fast LOD for distant pedestrians: draw head and thighs without extra sub-joint matrices or speech bubbles
+      if (arch.head) drawMesh(u, arch.head, M4.mul(bodyM, M4.model(0, 1.34, 0, 0, 0, 0)));
+      if (arch.thigh) {
+        drawMesh(u, arch.thigh, M4.mul(bodyM, M4.model(-0.11, 0.80, 0, 0, hipPitchL, 0)));
+        drawMesh(u, arch.thigh, M4.mul(bodyM, M4.model(0.11, 0.80, 0, 0, hipPitchR, 0)));
+      }
+      continue;
+    }
+
     // Decoupled head & animated talking jaw articulation
     if (arch.head) {
       const M_head = M4.mul(bodyM, M4.model(0, 1.34, 0, headYaw, headPitch, headRoll));
@@ -2026,149 +1971,153 @@ function render() {
 
   // MYTHICAL WATER SERPENT (LEVIATHAN - ORTHOGRAPHIC REFERENCE) SWIMMING IN RIVER
   if (SERPENT && MESH.serpentHead && MESH.serpentBody && MESH.serpentTail) {
-    const dirSign = SERPENT.dir > 0 ? 1 : -1;
-    const baseYaw = SERPENT.baseYaw || (SERPENT.dir > 0 ? -Math.PI / 2 : Math.PI / 2);
+    const sDistCam = Math.hypot(SERPENT.x - cam.pos[0], SERPENT.z - cam.pos[2]);
+    if (sDistCam < 350) {
+      const canEmitSpray = sDistCam < 220;
+      const dirSign = SERPENT.dir > 0 ? 1 : -1;
+      const baseYaw = SERPENT.baseYaw || (SERPENT.dir > 0 ? -Math.PI / 2 : Math.PI / 2);
 
-    // Compute continuous wave chain for head and all articulated segments
-    for (let i = 0; i <= SERPENT.segs; i++) {
-      const segT = i / SERPENT.segs;
-      // Distance along spine from head
-      const sDist = i * 2.85;
-      const sx = SERPENT.x - dirSign * sDist;
+      // Compute continuous wave chain for head and all articulated segments
+      for (let i = 0; i <= SERPENT.segs; i++) {
+        const segT = i / SERPENT.segs;
+        // Distance along spine from head
+        const sDist = i * 2.85;
+        const sx = SERPENT.x - dirSign * sDist;
 
-      // Anguilliform lateral S-curve (amplitude smoothly increases towards the paddle tail)
-      const latAmp = lerp(6.5, 14.5, segT);
-      const latPhase = SERPENT.phase - i * 0.44;
-      const sz = Math.sin(latPhase) * latAmp;
+        // Anguilliform lateral S-curve (amplitude smoothly increases towards the paddle tail)
+        const latAmp = lerp(6.5, 14.5, segT);
+        const latPhase = SERPENT.phase - i * 0.44;
+        const sz = Math.sin(latPhase) * latAmp;
 
-      // Tangent yaw: derivative of lateral sine wave d(sz)/ds ensures segments follow the swimming curve
-      const latDeriv = Math.cos(latPhase) * (-0.44) * latAmp / 2.85;
-      const segYaw = baseYaw + Math.atan(latDeriv * dirSign) * 0.90;
+        // Tangent yaw: derivative of lateral sine wave d(sz)/ds ensures segments follow the swimming curve
+        const latDeriv = Math.cos(latPhase) * (-0.44) * latAmp / 2.85;
+        const segYaw = baseYaw + Math.atan(latDeriv * dirSign) * 0.90;
 
-      // Vertical undulating crests (surfacing & diving): multi-harmonic wave
-      const vertPhase = SERPENT.phase * 1.15 - i * 0.40;
-      const sy = W.waterY + 0.85 + Math.sin(vertPhase) * 1.55;
-      const vertDeriv = Math.cos(vertPhase) * 0.42;
-      const segPitch = vertDeriv * 0.48;
+        // Vertical undulating crests (surfacing & diving): multi-harmonic wave
+        const vertPhase = SERPENT.phase * 1.15 - i * 0.40;
+        const sy = W.waterY + 0.85 + Math.sin(vertPhase) * 1.55;
+        const vertDeriv = Math.cos(vertPhase) * 0.42;
+        const segPitch = vertDeriv * 0.48;
 
-      // Natural hydrodynamic roll banking into the curve
-      const segRoll = -Math.sin(latPhase) * 0.32 * dirSign;
+        // Natural hydrodynamic roll banking into the curve
+        const segRoll = -Math.sin(latPhase) * 0.32 * dirSign;
 
-      const segScale = i === 0 ? 1.85 : (i === SERPENT.segs ? 1.65 : lerp(1.75, 1.05, segT));
-      const segM = M4.model(sx, sy, sz, segYaw, segPitch, segRoll, segScale, segScale, segScale);
+        const segScale = i === 0 ? 1.85 : (i === SERPENT.segs ? 1.65 : lerp(1.75, 1.05, segT));
+        const segM = M4.model(sx, sy, sz, segYaw, segPitch, segRoll, segScale, segScale, segScale);
 
-      if (i === 0) {
-        // Hydrodynamic Head with glowing eyes, crown horns & gills
-        drawMesh(u, MESH.serpentHead, segM, [1, 1, 1], 1.35);
+        if (i === 0) {
+          // Hydrodynamic Head with glowing eyes, crown horns & gills
+          drawMesh(u, MESH.serpentHead, segM, [1, 1, 1], 1.35);
 
-        // Water serpent spraying powerful high-pressure water fountain from its mouth
-        const sMouthPos = M4.xf(segM, [0, 0.05, -2.2]);
-        const sFwdPt = M4.xf(segM, [0, 0.05, -4.5]);
-        const sFwdDir = V3.norm(V3.sub(sFwdPt, sMouthPos));
-        SERPENT.sprayT = (SERPENT.sprayT || 0) + 0.016;
-        const sprayCycle = SERPENT.sprayT % 4.5;
-        const isSpraying = sprayCycle < 3.2; // 3.2s continuous water cannon spray, 1.3s pause
-        if (isSpraying && FX && FX.alpha) {
-          const sInt = Math.sin((sprayCycle / 3.2) * Math.PI);
-          for (let k = 0; k < 3; k++) {
-            const spraySpeed = 22 + Math.random() * 12 * sInt;
-            const vx = sFwdDir[0] * spraySpeed + (Math.random() - 0.5) * 3.5;
-            const vy = sFwdDir[1] * spraySpeed + 9.5 + Math.random() * 5.0 * sInt;
-            const vz = sFwdDir[2] * spraySpeed + (Math.random() - 0.5) * 3.5;
+          // Water serpent spraying powerful high-pressure water fountain from its mouth
+          const sMouthPos = M4.xf(segM, [0, 0.05, -2.2]);
+          const sFwdPt = M4.xf(segM, [0, 0.05, -4.5]);
+          const sFwdDir = V3.norm(V3.sub(sFwdPt, sMouthPos));
+          SERPENT.sprayT = (SERPENT.sprayT || 0) + 0.016;
+          const sprayCycle = SERPENT.sprayT % 4.5;
+          const isSpraying = sprayCycle < 3.2; // 3.2s continuous water cannon spray, 1.3s pause
+          if (canEmitSpray && isSpraying && FX && FX.alpha) {
+            const sInt = Math.sin((sprayCycle / 3.2) * Math.PI);
+            for (let k = 0; k < 3; k++) {
+              const spraySpeed = 22 + Math.random() * 12 * sInt;
+              const vx = sFwdDir[0] * spraySpeed + (Math.random() - 0.5) * 3.5;
+              const vy = sFwdDir[1] * spraySpeed + 9.5 + Math.random() * 5.0 * sInt;
+              const vz = sFwdDir[2] * spraySpeed + (Math.random() - 0.5) * 3.5;
 
-            // White water spray foam & churning drops
-            FX.alpha.emit({
-              pos: [sMouthPos[0] + (Math.random() - 0.5) * 0.8, sMouthPos[1] + (Math.random() - 0.5) * 0.6, sMouthPos[2] + (Math.random() - 0.5) * 0.8],
-              vel: [vx, vy, vz],
-              life: 1.8 + Math.random() * 0.5,
-              size: 0.75,
-              grow: 3.2,
-              drag: 1.04,
-              g: 11.5,
-              col: [0.90, 0.96, 1.0, 0.75 * sInt]
-            });
-
-            // Bioluminescent water droplets & river spray highlights
-            if (FX.add && Math.random() < 0.65) {
-              FX.add.emit({
-                pos: [sMouthPos[0] + (Math.random() - 0.5) * 0.8, sMouthPos[1], sMouthPos[2] + (Math.random() - 0.5) * 0.8],
-                vel: [vx * 0.95, vy * 0.95, vz * 0.95],
-                life: 1.5 + Math.random() * 0.4,
-                size: 0.55,
-                grow: 1.4,
-                drag: 1.05,
+              // White water spray foam & churning drops
+              FX.alpha.emit({
+                pos: [sMouthPos[0] + (Math.random() - 0.5) * 0.8, sMouthPos[1] + (Math.random() - 0.5) * 0.6, sMouthPos[2] + (Math.random() - 0.5) * 0.8],
+                vel: [vx, vy, vz],
+                life: 1.8 + Math.random() * 0.5,
+                size: 0.75,
+                grow: 3.2,
+                drag: 1.04,
                 g: 11.5,
-                col: [0.35, 0.92, 1.0, 0.85 * sInt]
+                col: [0.90, 0.96, 1.0, 0.75 * sInt]
               });
+
+              // Bioluminescent water droplets & river spray highlights
+              if (FX.add && Math.random() < 0.65) {
+                FX.add.emit({
+                  pos: [sMouthPos[0] + (Math.random() - 0.5) * 0.8, sMouthPos[1], sMouthPos[2] + (Math.random() - 0.5) * 0.8],
+                  vel: [vx * 0.95, vy * 0.95, vz * 0.95],
+                  life: 1.5 + Math.random() * 0.4,
+                  size: 0.55,
+                  grow: 1.4,
+                  drag: 1.05,
+                  g: 11.5,
+                  col: [0.35, 0.92, 1.0, 0.85 * sInt]
+                });
+              }
             }
           }
-        }
 
-        // Water wake & spray when head breaches surface
-        if (sy > W.waterY + 1.0 && FX && FX.alpha && Math.random() < 0.50) {
-          FX.alpha.emit({
-            pos: [sx + (Math.random() - 0.5) * 2.5, W.waterY + 0.2, sz + (Math.random() - 0.5) * 2.5],
-            vel: [(Math.random() - 0.5) * 4.5, 2.8 + Math.random() * 2.5, (Math.random() - 0.5) * 4.5],
-            life: 0.90, size: 1.05, grow: 2.4, drag: 1.4,
-            col: [0.92, 0.98, 1.0, 0.65]
-          });
-        }
-        // Continuous V-shaped white water bow wake
-        if (FX && FX.alpha && Math.random() < 0.70) {
-          const bowSign = (Math.random() > 0.5 ? 1 : -1);
-          const bowOff = bowSign * (1.2 + Math.random() * 2.8);
-          FX.alpha.emit({
-            pos: [sx - dirSign * 1.6, W.waterY + 0.08, sz + bowOff],
-            vel: [-dirSign * 0.9, 0.14, bowOff * 0.55],
-            life: 1.45, size: 1.8, grow: 3.4, drag: 1.15,
-            col: [0.94, 0.98, 1.0, 0.48]
-          });
-        }
-        // Glowing aquatic bioluminescent bubbles
-        if (FX && FX.add && Math.random() < 0.38) {
-          FX.add.emit({
-            pos: [sx + (Math.random() - 0.5) * 1.8, Math.min(sy, W.waterY) + 0.1, sz + (Math.random() - 0.5) * 1.8],
-            vel: [(Math.random() - 0.5) * 1.5, 1.2 + Math.random() * 1.0, (Math.random() - 0.5) * 1.5],
-            life: 0.80, size: 0.70, grow: 0.85, drag: 1.05,
-            col: [0.15, 0.88, 1.0, 0.88]
-          });
-        }
-      } else if (i === SERPENT.segs) {
-        // Paddle-like caudal fluke fin
-        drawMesh(u, MESH.serpentTail, segM, [1, 1, 1], 1.25);
+          // Water wake & spray when head breaches surface
+          if (canEmitSpray && sy > W.waterY + 1.0 && FX && FX.alpha && Math.random() < 0.50) {
+            FX.alpha.emit({
+              pos: [sx + (Math.random() - 0.5) * 2.5, W.waterY + 0.2, sz + (Math.random() - 0.5) * 2.5],
+              vel: [(Math.random() - 0.5) * 4.5, 2.8 + Math.random() * 2.5, (Math.random() - 0.5) * 4.5],
+              life: 0.90, size: 1.05, grow: 2.4, drag: 1.4,
+              col: [0.92, 0.98, 1.0, 0.65]
+            });
+          }
+          // Continuous V-shaped white water bow wake
+          if (canEmitSpray && FX && FX.alpha && Math.random() < 0.70) {
+            const bowSign = (Math.random() > 0.5 ? 1 : -1);
+            const bowOff = bowSign * (1.2 + Math.random() * 2.8);
+            FX.alpha.emit({
+              pos: [sx - dirSign * 1.6, W.waterY + 0.08, sz + bowOff],
+              vel: [-dirSign * 0.9, 0.14, bowOff * 0.55],
+              life: 1.45, size: 1.8, grow: 3.4, drag: 1.15,
+              col: [0.94, 0.98, 1.0, 0.48]
+            });
+          }
+          // Glowing aquatic bioluminescent bubbles
+          if (canEmitSpray && FX && FX.add && Math.random() < 0.38) {
+            FX.add.emit({
+              pos: [sx + (Math.random() - 0.5) * 1.8, Math.min(sy, W.waterY) + 0.1, sz + (Math.random() - 0.5) * 1.8],
+              vel: [(Math.random() - 0.5) * 1.5, 1.2 + Math.random() * 1.0, (Math.random() - 0.5) * 1.5],
+              life: 0.80, size: 0.70, grow: 0.85, drag: 1.05,
+              col: [0.15, 0.88, 1.0, 0.88]
+            });
+          }
+        } else if (i === SERPENT.segs) {
+          // Paddle-like caudal fluke fin
+          drawMesh(u, MESH.serpentTail, segM, [1, 1, 1], 1.25);
 
-        // Caudal fin water wake trail
-        if (FX && FX.alpha && Math.random() < 0.55) {
-          FX.alpha.emit({
-            pos: [sx + (Math.random() - 0.5) * 3.0, W.waterY + 0.1, sz + (Math.random() - 0.5) * 3.0],
-            vel: [(Math.random() - 0.5) * 2.6, 0.85, (Math.random() - 0.5) * 2.6],
-            life: 1.2, size: 1.5, grow: 3.0, drag: 1.2,
-            col: [0.88, 0.96, 1.0, 0.48]
-          });
-        }
-      } else {
-        // Body segment with spinous dorsal fin & bioluminescent photophores
-        const isChest = (i === 1 || i === 2);
-        drawMesh(u, MESH.serpentBody, segM, [1, 1, 1], 1.20);
+          // Caudal fin water wake trail
+          if (canEmitSpray && FX && FX.alpha && Math.random() < 0.55) {
+            FX.alpha.emit({
+              pos: [sx + (Math.random() - 0.5) * 3.0, W.waterY + 0.1, sz + (Math.random() - 0.5) * 3.0],
+              vel: [(Math.random() - 0.5) * 2.6, 0.85, (Math.random() - 0.5) * 2.6],
+              life: 1.2, size: 1.5, grow: 3.0, drag: 1.2,
+              col: [0.88, 0.96, 1.0, 0.48]
+            });
+          }
+        } else {
+          // Body segment with spinous dorsal fin & bioluminescent photophores
+          const isChest = (i === 1 || i === 2);
+          drawMesh(u, MESH.serpentBody, segM, [1, 1, 1], 1.20);
 
-        // Body wave foam trail on the crest of each arched segment breaching surface
-        if (sy > W.waterY && FX && FX.alpha && Math.random() < 0.30) {
-          FX.alpha.emit({
-            pos: [sx + (Math.random() - 0.5) * 1.6, W.waterY + 0.08, sz + (Math.random() - 0.5) * 1.6],
-            vel: [(Math.random() - 0.5) * 1.2, 0.16, (Math.random() - 0.5) * 1.2],
-            life: 1.0, size: 1.3, grow: 2.6, drag: 1.2,
-            col: [0.92, 0.96, 1.0, 0.42]
-          });
-        }
+          // Body wave foam trail on the crest of each arched segment breaching surface
+          if (canEmitSpray && sy > W.waterY && FX && FX.alpha && Math.random() < 0.30) {
+            FX.alpha.emit({
+              pos: [sx + (Math.random() - 0.5) * 1.6, W.waterY + 0.08, sz + (Math.random() - 0.5) * 1.6],
+              vel: [(Math.random() - 0.5) * 1.2, 0.16, (Math.random() - 0.5) * 1.2],
+              life: 1.0, size: 1.3, grow: 2.6, drag: 1.2,
+              col: [0.92, 0.96, 1.0, 0.42]
+            });
+          }
 
-        // "TRANSFUSED WEBBING FOR SWIMMING": Pectoral flipper fins on chest segment
-        if (isChest && MESH.serpentFlipperL && MESH.serpentFlipperR) {
-          const flipperFlap = Math.sin(SERPENT.phase * 1.15 + (i === 1 ? 0 : -0.4)) * 0.48;
-          const flipperPitch = Math.cos(SERPENT.phase * 1.15 + (i === 1 ? 0 : -0.4)) * 0.22;
-          const ML = M4.mul(segM, M4.model(-0.65, -0.12, 0, 0, flipperPitch, flipperFlap));
-          drawMesh(u, MESH.serpentFlipperL, ML, [1, 1, 1], 1.20);
-          const MR = M4.mul(segM, M4.model(0.65, -0.12, 0, 0, -flipperPitch, -flipperFlap));
-          drawMesh(u, MESH.serpentFlipperR, MR, [1, 1, 1], 1.20);
+          // "TRANSFUSED WEBBING FOR SWIMMING": Pectoral flipper fins on chest segment
+          if (isChest && MESH.serpentFlipperL && MESH.serpentFlipperR) {
+            const flipperFlap = Math.sin(SERPENT.phase * 1.15 + (i === 1 ? 0 : -0.4)) * 0.48;
+            const flipperPitch = Math.cos(SERPENT.phase * 1.15 + (i === 1 ? 0 : -0.4)) * 0.22;
+            const ML = M4.mul(segM, M4.model(-0.65, -0.12, 0, 0, flipperPitch, flipperFlap));
+            drawMesh(u, MESH.serpentFlipperL, ML, [1, 1, 1], 1.20);
+            const MR = M4.mul(segM, M4.model(0.65, -0.12, 0, 0, -flipperPitch, -flipperFlap));
+            drawMesh(u, MESH.serpentFlipperR, MR, [1, 1, 1], 1.20);
+          }
         }
       }
     }
@@ -2228,6 +2177,8 @@ function render() {
 
   // FLOCKS OF REAL SOARING BIRDS FLYING EVERYWHERE WITH ARTICULATED WING FLAPPING
   for (const b of BIRDS) {
+    const bDist = Math.hypot(b.x - cam.pos[0], b.z - cam.pos[2]);
+    if (bDist > 180) continue;
     const sp = b.flock || 'gull';
     const meshBody = MESH['bird_' + sp] || MESH.bird_gull;
     const meshWingL = MESH['birdWingL_' + sp] || MESH.birdWingL_gull;
@@ -2239,7 +2190,7 @@ function render() {
     const sc = b.scale || 0.48;
     const birdM = M4.model(b.x, b.y, b.z, b.yaw, b.pitch || 0, (b.bank || -0.22) + flapAngle * 0.12, sc, sc, sc);
     drawMesh(u, meshBody, birdM, [1, 1, 1], 1.0);
-    if (meshWingL && meshWingR) {
+    if (bDist < 65 && meshWingL && meshWingR) {
       const ML = M4.mul(birdM, M4.model(-0.04, 0.04, 0, -flapAngle * 0.15, flapAngle * 0.10, flapAngle));
       const MR = M4.mul(birdM, M4.model(0.04, 0.04, 0, flapAngle * 0.15, -flapAngle * 0.10, -flapAngle));
       drawMesh(u, meshWingL, ML, [1, 1, 1], 1.0);
@@ -2281,7 +2232,7 @@ function render() {
   gl.useProgram(P.flat.p); const fu = P.flat.u; gl.uniformMatrix4fv(fu.u_vp, false, vp); gl.uniform3fv(fu.u_cam, eye); gl.uniform3fv(fu.u_fogCol, m.fogCol); gl.uniform2fv(fu.u_fog, m.fog);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   drawFlat(fu, MESH.shadow, M4.model(cv_.x, 0.075, cv_.z, cv_.yaw), [1, 1, 1, lerp(0.75, 0.55, m.night)]);
-  for (const t of TRAFFIC) if (t.y < 1 && Math.hypot(t.x - cam.pos[0], t.z - cam.pos[2]) < 150) drawFlat(fu, MESH.shadow, M4.model(t.x, 0.07, t.z, t.yaw, 0, 0, t.wid / 2.1, 1, t.len / 4.6, _M), [1, 1, 1, 0.5]);
+  for (const t of TRAFFIC) if (t.y < 1 && Math.hypot(t.x - cam.pos[0], t.z - cam.pos[2]) < 75) drawFlat(fu, MESH.shadow, M4.model(t.x, 0.07, t.z, t.yaw, 0, 0, t.wid / 2.1, 1, t.len / 4.6, _M), [1, 1, 1, 0.5]);
   if (MESH.marksDirty) { uploadDyn(MESH.marks, MESH.marksBuf, MESH.marksN * 6); MESH.marksDirty = false; }
   if (MESH.marksN) drawFlat(fu, MESH.marks, M4.ident(), [1, 1, 1, 1], MESH.marksN * 6);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -2314,20 +2265,33 @@ function render() {
     if (gn) { uploadDyn(MESH.gps, gb, gn * 9); drawFlat(fu, MESH.gps, M4.ident(), [1.3, 1.3, 1.3, 1], gn * 6); } }
   // particles
   gl.useProgram(P.part.p); const pu = P.part.u; gl.uniformMatrix4fv(pu.u_vp, false, vp); gl.uniform3fv(pu.u_cam, eye); gl.uniform3fv(pu.u_fogCol, m.fogCol); gl.uniform2fv(pu.u_fog, m.fog);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); FX.alpha.build(R, U); gl.bindVertexArray(FX.alpha.mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, FX.alpha.mesh.count);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE); FX.add.build(R, U); gl.bindVertexArray(FX.add.mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, FX.add.mesh.count);
+  FX.alpha.build(R, U);
+  if (FX.alpha.mesh.count > 0) {
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindVertexArray(FX.alpha.mesh.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, FX.alpha.mesh.count);
+  }
+  FX.add.build(R, U);
+  if (FX.add.mesh.count > 0) {
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.bindVertexArray(FX.add.mesh.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, FX.add.mesh.count);
+  }
   gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null);
   // post
   if (useRT) {
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, RT.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, RT.scene.fbo); gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.LINEAR);
     gl.disable(gl.DEPTH_TEST);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, RT.A.fbo); gl.viewport(0, 0, RT.A.w, RT.A.h); gl.useProgram(P.bright.p); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, RT.scene.tex); gl.uniform1i(P.bright.u.u_tex, 0); gl.uniform1f(P.bright.u.u_th, 0.8); gl.drawArrays(gl.TRIANGLES, 0, 3);
-    gl.useProgram(P.blur.p); gl.uniform1i(P.blur.u.u_tex, 0);
-    for (let i = 0; i < 2; i++) { gl.bindFramebuffer(gl.FRAMEBUFFER, RT.B.fbo); gl.bindTexture(gl.TEXTURE_2D, RT.A.tex); gl.uniform2f(P.blur.u.u_dir, (1 + i) / RT.A.w, 0); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.bindFramebuffer(gl.FRAMEBUFFER, RT.A.fbo); gl.bindTexture(gl.TEXTURE_2D, RT.B.tex); gl.uniform2f(P.blur.u.u_dir, 0, (1 + i) / RT.A.h); gl.drawArrays(gl.TRIANGLES, 0, 3); }
+    const doBloom = (m.bloom > 0.05) && !GAME.reduced;
+    if (doBloom) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, RT.A.fbo); gl.viewport(0, 0, RT.A.w, RT.A.h); gl.useProgram(P.bright.p); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, RT.scene.tex); gl.uniform1i(P.bright.u.u_tex, 0); gl.uniform1f(P.bright.u.u_th, 0.8); gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.useProgram(P.blur.p); gl.uniform1i(P.blur.u.u_tex, 0);
+      for (let i = 0; i < 2; i++) { gl.bindFramebuffer(gl.FRAMEBUFFER, RT.B.fbo); gl.bindTexture(gl.TEXTURE_2D, RT.A.tex); gl.uniform2f(P.blur.u.u_dir, (1 + i) / RT.A.w, 0); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.bindFramebuffer(gl.FRAMEBUFFER, RT.A.fbo); gl.bindTexture(gl.TEXTURE_2D, RT.B.tex); gl.uniform2f(P.blur.u.u_dir, 0, (1 + i) / RT.A.h); gl.drawArrays(gl.TRIANGLES, 0, 3); }
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h); gl.useProgram(P.comp.p);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, RT.scene.tex); gl.uniform1i(P.comp.u.u_scene, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, RT.A.tex); gl.uniform1i(P.comp.u.u_bloom, 1);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, RT.scene.tex); gl.uniform1i(P.comp.u.u_scene, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, doBloom ? RT.A.tex : RT.scene.tex); gl.uniform1i(P.comp.u.u_bloom, 1);
     const blur = GAME.reduced ? 0 : clamp((c.speed - 22) / 25, 0, 1) * (c.boosting ? 1.4 : 0.8);
-    gl.uniform1f(P.comp.u.u_bloomAmt, m.bloom * 1.15); gl.uniform1f(P.comp.u.u_blur, blur); gl.uniform1f(P.comp.u.u_vig, 0.55); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.uniform1f(P.comp.u.u_bloomAmt, doBloom ? m.bloom * 1.15 : 0.0); gl.uniform1f(P.comp.u.u_blur, blur); gl.uniform1f(P.comp.u.u_vig, 0.55); gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.activeTexture(gl.TEXTURE0); gl.enable(gl.DEPTH_TEST);
   }
 }
@@ -2406,18 +2370,46 @@ function updateMood(dt) {
 
 // ---------- main loop ----------
 let lastT = 0;
+let smoothDt = 0.0166;
 function frame(ts) {
-  const dt = Math.min(0.066, (ts - lastT) / 1000 || 0.016); lastT = ts;
-  if (!GAME.paused) {
-    GAME.t += dt;
-    if (GAME.phase !== 'loading') { updateCar(dt); updateFX(dt); updateWorld(dt); updateCamera(dt); updateMood(dt); }
-    render(); GAME.emit('frame', dt);
+  if (GAME.paused) {
+    lastT = 0;
+    requestAnimationFrame(frame);
+    return;
   }
+  if (!lastT) {
+    lastT = ts;
+    requestAnimationFrame(frame);
+    return;
+  }
+  const rawDt = (ts - lastT) / 1000;
+  lastT = ts;
+  const clampedDt = Math.min(0.045, Math.max(0.001, rawDt));
+  smoothDt = smoothDt ? (smoothDt * 0.72 + clampedDt * 0.28) : clampedDt;
+  const dt = smoothDt;
+
+  GAME.t += dt;
+  if (GAME.phase !== 'loading') { updateCar(dt); updateFX(dt); updateWorld(dt); updateCamera(dt); updateMood(dt); }
+  render(); GAME.emit('frame', dt);
   requestAnimationFrame(frame);
 }
 function startLoop() { FX.alpha = FX.alpha || new Particles(3600, false); FX.add = FX.add || new Particles(3200, true); requestAnimationFrame(frame); }
-GAME.endTour = function () { GAME.phase = 'intro'; CAMFX.tour = null; GAME.beginIntro(); GAME.emit('tourEnd'); };
-GAME.beginIntro = function () { const c = GAME.car; Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0 }); c.auto = GAME.reduced ? 0 : 3.6; CAMFX.orbit = { t: 0, len: GAME.reduced ? 0.01 : 4.5, from: -2.35, d0: 5.2, h0: 1.0 }; GAME.cam.pos = [c.x - 4, 1.1, c.z - 4]; GAME.cam.look = [c.x, 0.7, c.z]; GAME.phase = 'intro'; };
+GAME.endTour = function () { CAMFX.tour = null; GAME.beginIntro(); GAME.emit('tourEnd'); };
+GAME.beginIntro = function () {
+  const c = GAME.car;
+  Object.assign(c, { x: 0, z: 154, yaw: 0, vx: 0, vz: 0, speed: 0, vf: 0, vl: 0, auto: 0 });
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
+  c.auto = 0;
+  CAMFX.orbit = null;
+  GAME.cam.pos = [c.x, 2.15, c.z + 6.6];
+  GAME.cam.look = [c.x, 0.8, c.z - 8];
+  GAME.cam.off = null;
+  GAME.cam.loff = null;
+  GAME.phase = 'driving';
+  GAME.emit('driving');
+};
 GAME.startTour = function () {
   GAME.phase = 'tour'; CAMFX.tour = { t: 0, len: 2.6, shots: [
     [[140, 70, -70], [175, 52, -140], [208, 18, -190], [208, 22, -196]],
@@ -2430,7 +2422,21 @@ GAME.enter = function () {
   if (GAME.phase !== 'driving' || !GAME.nearLm) return; const { lm, i } = GAME.nearLm; GAME.activeLm = { lm, i }; GAME.phase = 'entering'; startHero(lm, i);
 };
 GAME.exit = function () { if (GAME.phase !== 'panel' && GAME.phase !== 'entering') return; const cam = GAME.cam; CAMFX.hero = { t: 0, len: GAME.reduced ? 0.01 : 0.8, from: { pos: cam.pos.slice(), look: cam.look.slice() } }; GAME.phase = 'exiting'; };
-GAME.teleport = function (x, z, yaw) { const c = GAME.car; Object.assign(c, { x, z, yaw, vx: 0, vz: 0, steer: 0 }); GAME.cam.yawL = yaw; const f = [-Math.sin(yaw), -Math.cos(yaw)]; GAME.cam.pos = [x - f[0] * 18, 26, z - f[1] * 18 + 0.01]; GAME.cam.look = [x, 0.8, z]; TRAIL.length = 0; lastWheels = null; };
+GAME.teleport = function (x, z, yaw) {
+  const c = GAME.car;
+  Object.assign(c, { x, z, yaw, vx: 0, vz: 0, steer: 0 });
+  c.px_ = c.x; c.pz_ = c.z; c.pyaw_ = c.yaw;
+  if (typeof PH !== 'undefined') PH.acc = 0;
+  GAME.view = c;
+  GAME.cam.yawL = yaw;
+  const f = [-Math.sin(yaw), -Math.cos(yaw)];
+  GAME.cam.pos = [x - f[0] * 18, 26, z - f[1] * 18 + 0.01];
+  GAME.cam.look = [x, 0.8, z];
+  GAME.cam.off = null;
+  GAME.cam.loff = null;
+  TRAIL.length = 0;
+  lastWheels = null;
+};
 GAME.setTarget = function (id) { GAME.target = id; GAME.refreshRoute(); };
 GAME.refreshRoute = function () { if (!GAME.target) { GAME.route = []; return; } const lm = W.landmarks.find(l => l.id === GAME.target); const t = lm.trig.slice().sort((a, b) => Math.hypot(a[0] - GAME.car.x, a[1] - GAME.car.z) - Math.hypot(b[0] - GAME.car.x, b[1] - GAME.car.z))[0]; GAME.route = routeTo(t[0], t[1]); };
 GAME.setQuality = function (q) { GAME.quality = q; resize(); };

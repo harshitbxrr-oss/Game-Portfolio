@@ -47,7 +47,13 @@ export function buildHtml({ dev = false } = {}) {
   const parts = MODULES.map((file) => ({ file, text: readFileSync(join(SRC, file), 'utf8') }));
   // function replacers: the code is full of "$" characters that String.replace would otherwise treat specially
   html = html.replace(SCRIPT_BLOCK, () => (dev ? parts.map((p) => `<script src="src/${p.file}"></script>`).join('\n') : `<script>\n${parts.map((p) => p.text).join('\n')}\n</script>`));
-  for (const [key, name] of Object.entries(IMAGES)) {
+  for (const [key, origName] of Object.entries(IMAGES)) {
+    let name = origName;
+    const baseName = origName.replace(/\.[^.]+$/, '');
+    const webpName = baseName + '.webp';
+    if (!dev && existsSync(join(IMG, webpName))) {
+      name = webpName;
+    }
     const ext = extname(name).toLowerCase();
     const mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : (ext === '.png' ? 'image/png' : 'image/webp');
     const value = dev ? `assets/images/${name}` : `data:${mime};base64,${readFileSync(join(IMG, name)).toString('base64')}`;
@@ -111,6 +117,8 @@ function main() {
     copyFileSync(join(ROOT, 'assets', 'og-image.jpg'), join(out, 'og-image.jpg'));
     const resume = join(ROOT, 'assets', 'harshit-kumar-sinha-resume.pdf');
     if (existsSync(resume)) copyFileSync(resume, join(out, 'assets', 'harshit-kumar-sinha-resume.pdf'));
+    const manifest = join(ROOT, 'manifest.json');
+    if (existsSync(manifest)) copyFileSync(manifest, join(out, 'manifest.json'));
     const caseStudiesDir = join(ROOT, 'case-studies');
     if (existsSync(caseStudiesDir)) {
       cpSync(caseStudiesDir, join(out, 'case-studies'), { recursive: true, force: true });

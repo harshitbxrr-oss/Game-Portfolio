@@ -90,6 +90,10 @@ function handle(req, res) {
     return;
   }
   if (path === '/' || path === '/index.html') return send(res, 200, TYPES['.html'], indexPage());
+  if (path === '/manifest.json') {
+    const mf = join(ROOT, 'manifest.json');
+    return send(res, 200, TYPES['.json'], readFileSync(mf, 'utf8'));
+  }
 
   // source modules: served with a strict-mode directive in front (no line shift), because the production bundle runs in strict mode
   const mod = /^\/src\/([\w.-]+\.js)$/.exec(path);

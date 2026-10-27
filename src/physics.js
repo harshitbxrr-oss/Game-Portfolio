@@ -457,14 +457,14 @@ GAME.on('frame', () => { const c = GAME.car; if (!FX.alpha || !(c.wheelspin > 0.
 
 // ---------- adaptive resolution: hold the frame rate by trading pixels ----------
 GAME.renderScale = 1;
-const PERF = { t: 0, n: 0, sum: 0, cool: 2, good: 0 };
+const PERF = { t: 0, n: 0, sum: 0, cool: 1.5, good: 0 };
 GAME.on('frame', dt => {
   if (GAME.phase === 'loading' || GAME.paused) return; PERF.sum += dt; PERF.n++; PERF.t += dt; PERF.cool -= dt;
-  if (PERF.t < 1.0) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
+  if (PERF.t < 0.6) return; const avg = PERF.sum / PERF.n; PERF.t = PERF.sum = PERF.n = 0; if (PERF.cool > 0) return;
   let s = GAME.renderScale;
-  if (avg > 1 / 50 && s > 0.5) { s = Math.max(0.5, s * (avg > 1 / 30 ? 0.74 : 0.88)); PERF.good = 0; }
-  else if (avg < 1 / 58) { if (++PERF.good >= 6 && s < 1) { s = Math.min(1, s * 1.1); PERF.good = 0; } } else PERF.good = 0;
-  if (Math.abs(s - GAME.renderScale) > 0.02) { GAME.renderScale = s; PERF.cool = 2.5; resize(); }
+  if (avg > 1 / 48 && s > 0.65) { s = Math.max(0.65, s * 0.86); PERF.good = 0; }
+  else if (avg < 1 / 58) { if (++PERF.good >= 4 && s < 1) { s = Math.min(1, s * 1.1); PERF.good = 0; } } else PERF.good = 0;
+  if (Math.abs(s - GAME.renderScale) > 0.02) { GAME.renderScale = s; PERF.cool = 2.0; resize(); }
 });
 
 // ---------- breakable street lamps and solid trees ----------

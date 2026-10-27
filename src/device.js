@@ -6,13 +6,18 @@
 const HTML = document.documentElement;
 const DEV = { touchCap: false, touchOn: false, ff: 'desk', steer: store.get('steer', 'arrows'), tc: store.get('tc', 'auto'), hud: store.get('hud', 'full'), usedKeys: false, immersive: false };
 function detectDevice() {
-  const w = innerWidth, h = innerHeight, s = Math.min(w, h);
+  const w = innerWidth, h = innerHeight, s = Math.min(w, h), isPortrait = h > w;
   DEV.touchCap = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(hover: hover) and (pointer: fine)').matches);
   DEV.touchOn = DEV.tc === 'on' || (DEV.tc === 'auto' && DEV.touchCap && !DEV.usedKeys);
-  DEV.ff = DEV.touchOn ? (s < 600 ? (h >= w ? 'phone-p' : 'phone-l') : 'tablet') : (w < 900 || h < 620 ? 'compact' : 'desk');
-  HTML.classList.remove('ff-desk', 'ff-compact', 'ff-tablet', 'ff-phone-l', 'ff-phone-p'); HTML.classList.add('ff-' + DEV.ff);
+  DEV.ff = DEV.touchOn ? (s < 600 ? (isPortrait ? 'phone-p' : 'phone-l') : (isPortrait ? 'tablet-p' : 'tablet')) : (w < 900 || h < 620 ? 'compact' : 'desk');
+  HTML.classList.remove('ff-desk', 'ff-compact', 'ff-tablet', 'ff-tablet-p', 'ff-phone-l', 'ff-phone-p'); HTML.classList.add('ff-' + DEV.ff);
   HTML.classList.toggle('touch', DEV.touchOn); HTML.classList.toggle('touch-cap', DEV.touchCap || DEV.tc === 'on');
   HTML.classList.toggle('steer-arrows', DEV.steer === 'arrows'); HTML.classList.toggle('hud-min', DEV.hud === 'min' || DEV.immersive);
+  const rotEl = $('#rotateScreen');
+  if (rotEl) {
+    const showRotate = isPortrait && (DEV.touchCap || DEV.touchOn || s < 820);
+    rotEl.classList.toggle('active', showRotate);
+  }
 }
 function devSet(k, v) {
   if (k === 'steer') { DEV.steer = v; store.set('steer', v); }
@@ -23,9 +28,13 @@ function devSet(k, v) {
 addEventListener('resize', detectDevice); addEventListener('orientationchange', () => setTimeout(detectDevice, 200));
 // a physical keyboard or controller on a touch device hides the on-screen controls; touching the screen brings them back
 addEventListener('keydown', e => {
+  if (GAME.phase === 'intro') { GAME.beginIntro(); }
   if (KEYMAP[e.code] && DEV.tc === 'auto' && DEV.touchCap && !DEV.usedKeys && booted && $('#loader').classList.contains('hidden')) { DEV.usedKeys = true; detectDevice(); toast('Keyboard detected, on-screen controls hidden'); }
 }, true);
-addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && DEV.usedKeys) { DEV.usedKeys = false; detectDevice(); } }, true);
+addEventListener('pointerdown', e => {
+  if (GAME.phase === 'intro') { GAME.beginIntro(); }
+  if (e.pointerType === 'touch' && DEV.usedKeys) { DEV.usedKeys = false; detectDevice(); }
+}, true);
 
 // ---------- camera: change rig, drag to look around, wheel or pinch to zoom ----------
 function camCycle() { GAME.cycleCam(); }
@@ -48,14 +57,45 @@ $('#btnCam').onclick = camCycle;
 const SVG_FS_IN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
 const SVG_FS_OUT = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
 const isFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
-function lockLandscape() { try { if (DEV.touchOn && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => { }); } catch (_) { } }
+function autoLockLandscape() {
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    } else if (screen.lockOrientation) {
+      screen.lockOrientation('landscape');
+    } else if (screen.mozLockOrientation) {
+      screen.mozLockOrientation('landscape');
+    } else if (screen.msLockOrientation) {
+      screen.msLockOrientation('landscape');
+    }
+  } catch (_) {}
+}
+const lockLandscape = autoLockLandscape;
+
+function enterGameMobile() {
+  autoLockLandscape();
+  if (DEV.touchCap && !isFS()) {
+    const req = HTML.requestFullscreen || HTML.webkitRequestFullscreen;
+    if (req) {
+      try {
+        const p = req.call(HTML, { navigationUI: 'hide' });
+        if (p && p.then) {
+          p.then(() => { autoLockLandscape(); updateFSBtn(); }).catch(() => {});
+        } else {
+          autoLockLandscape();
+          updateFSBtn();
+        }
+      } catch (_) {}
+    }
+  }
+}
 function setImmersive(on, quiet) { DEV.immersive = on; detectDevice(); updateFSBtn(); if (on && !quiet) toast(/iPhone|iPod/.test(navigator.userAgent) ? 'Immersive view is on. For true full screen on iPhone, tap Share, then Add to Home Screen.' : 'Full screen is blocked here, so the view switched to immersive mode. ' + (DEV.touchOn ? 'Tap the full screen button again to exit.' : 'Press F again to exit.'), 4600); }
 function toggleFullscreen() {
   if (isFS()) { const x = document.exitFullscreen || document.webkitExitFullscreen; if (x) { const p = x.call(document); if (p && p.catch) p.catch(() => { }); } return; }
   if (DEV.immersive) { setImmersive(false); return; }
   const req = HTML.requestFullscreen || HTML.webkitRequestFullscreen, enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
   if (!req || !enabled) { setImmersive(true); return; }
-  try { const p = req.call(HTML, { navigationUI: 'hide' }); if (p && p.then) p.then(() => { updateFSBtn(); lockLandscape(); }).catch(() => setImmersive(true)); else { lockLandscape(); setTimeout(() => { if (!isFS()) setImmersive(true); else updateFSBtn(); }, 400); } } catch (_) { setImmersive(true); }
+  try { const p = req.call(HTML, { navigationUI: 'hide' }); if (p && p.then) p.then(() => { updateFSBtn(); autoLockLandscape(); }).catch(() => setImmersive(true)); else { autoLockLandscape(); setTimeout(() => { if (!isFS()) setImmersive(true); else updateFSBtn(); }, 400); } } catch (_) { setImmersive(true); }
 }
 function updateFSBtn() { const on = isFS() || DEV.immersive; const b = $('#btnFull'); b.innerHTML = on ? SVG_FS_OUT : SVG_FS_IN; b.setAttribute('aria-label', on ? 'Exit full screen (F)' : 'Full screen (F)'); b.setAttribute('aria-pressed', on); $('#setFull').textContent = on ? 'Exit full screen' : 'Full screen'; }
 ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (isFS() && DEV.immersive) DEV.immersive = false; detectDevice(); updateFSBtn(); setTimeout(() => { if (booted) resize(); }, 60); }));
@@ -103,11 +143,31 @@ function pollPad(dt) {
   syncInput();
 }
 
-// ---------- rotate hint + per-frame hooks ----------
+// ---------- rotate hint, landscape locking + per-frame hooks ----------
 if (store.get('rot', '0') !== '1') $('#rotateHint').classList.add('show');
 $('#rotateX').onclick = () => { $('#rotateHint').classList.remove('show'); store.set('rot', '1'); };
+const btnRot = $('#btnAutoRotate');
+if (btnRot) {
+  btnRot.onclick = () => {
+    enterGameMobile();
+    autoLockLandscape();
+    setTimeout(() => { detectDevice(); if (booted) resize(); }, 300);
+  };
+}
+addEventListener('pointerdown', () => { autoLockLandscape(); }, { once: true, passive: true });
+if (screen.orientation) {
+  try {
+    screen.orientation.addEventListener('change', () => {
+      setTimeout(() => { detectDevice(); if (booted) resize(); }, 150);
+    });
+  } catch (_) {}
+}
 GAME.on('frame', dt => { pollPad(dt); HTML.classList.toggle('playing', GAME.phase === 'driving' && !$('#hud').classList.contains('hidden')); });
 GAME.camMode = CAM_MODES[store.get('cam', 'chase')] ? store.get('cam', 'chase') : 'chase';
 detectDevice(); updateFSBtn();
-window.__game.DEV = DEV; window.__game.toggleFullscreen = toggleFullscreen; window.__game.openHelp = openHelp;
+window.__game.DEV = DEV;
+window.__game.toggleFullscreen = toggleFullscreen;
+window.__game.openHelp = openHelp;
+window.__game.autoLockLandscape = autoLockLandscape;
+window.__game.enterGameMobile = enterGameMobile;
 boot();

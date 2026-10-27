@@ -1,0 +1,20 @@
+{
+  "name": "Shatranj City — Harshit Kumar Sinha",
+  "short_name": "Shatranj City",
+  "description": "Drive the VAJRA-S1 through Shatranj City to explore the portfolio of Harshit Kumar Sinha, UI/UX Designer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#07090f",
+  "theme_color": "#07090f",
+  "icons": [
+    {
+      "src": "assets/og-image.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
